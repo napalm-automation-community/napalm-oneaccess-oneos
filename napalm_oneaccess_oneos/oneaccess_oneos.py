@@ -18,6 +18,11 @@ Napalm driver for Oneaccess_oneos.
 
 Read https://napalm.readthedocs.io for more information.
 """
+
+### temp 
+import pprint
+#####
+
 import telnetlib
 import netmiko
 from napalm.base import NetworkDriver
@@ -281,14 +286,15 @@ class Oneaccess_oneosDriver(NetworkDriver):
             "serial_number": None,
             "model": None,
             "hostname": None,
-            "fqdn": None
+            "fqdn": None,
+            "interface_list": []
         }
 
         # get output from device
         show_system_status = self._send_command('show system status')
         show_system_hardware = self._send_command('show system hardware')
         show_hostname = self._send_command('hostname')
-        show_ip_int_brie = self._send_command('show ip int brief')                           
+        show_ip_int_brief = self._send_command('show ip int brief')                           
 
         for l in show_system_status.splitlines():
             if "System Information" in l:
@@ -316,8 +322,13 @@ class Oneaccess_oneosDriver(NetworkDriver):
             if l:
                 facts["hostname"] = l.strip()
                 break
+                
+        for line in show_ip_int_brief.splitlines()[1:-1]:
+            interface = line.split("  ")[0]
+            if interface != "Null 0":
+                facts["interface_list"].append(interface)                            
 
-        #No local FQDN to retrieve that I know of on a OneAccess device
+        #No local FQDN to retrieve on a OneAccess device
         facts["fqdn"] = "N/A" 
 
         return facts

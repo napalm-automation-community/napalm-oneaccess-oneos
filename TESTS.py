@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # test()
     # print(checklan())
 
-    router = Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',20, optional_args = {'transport' : 'ssh'})
+    router = Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',30, optional_args = {'transport' : 'ssh'})
     try:
         router.open()
     except Exception as e:
@@ -69,6 +69,6 @@ if __name__ == "__main__":
     print('\n')
     print('\n')
     #os5
-    router2 = Oneaccess_oneosDriver('172.16.30.111', 'admin','admin',20, optional_args = {'transport' : 'ssh'})
+    router2 = Oneaccess_oneosDriver('172.16.30.111', 'admin','admin',30, optional_args = {'transport' : 'ssh'})
     router2.open()
     pprint(router2.get_facts())
