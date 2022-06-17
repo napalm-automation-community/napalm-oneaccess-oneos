@@ -1,0 +1,3 @@
+include requirements.txt
+include napalm_oneaccess_oneos/templates/*.j2
+include napalm_oneaccess_oneos/utils/textfsm_templates/*.tpl
