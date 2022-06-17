@@ -64,4 +64,11 @@ if __name__ == "__main__":
     except Exception as e:
         pprint (e)
 
-    pprint(router.is_alive())
+    pprint(router.get_facts())
+
+    print('\n')
+    print('\n')
+    #os5
+    router2 = Oneaccess_oneosDriver('172.16.30.111', 'admin','admin',20, optional_args = {'transport' : 'ssh'})
+    router2.open()
+    pprint(router2.get_facts())

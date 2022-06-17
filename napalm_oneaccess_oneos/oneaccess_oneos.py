@@ -127,7 +127,9 @@ class Oneaccess_oneosDriver(NetworkDriver):
         return output.strip()
 
     def is_alive(self):
-        """Returns a flag with the state of the connection."""
+        """Returns a flag with the state of the connection.
+           Logic copied from cisco ios driver
+        """
         null = chr(0)
         if self.device is None:
             return {'is_alive': False}
@@ -161,6 +163,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
         Output example:
         {   'show calendar': u'22:02:01 UTC Thu Feb 18 2016',
             'show clock': u'*22:01:51.165 UTC Thu Feb 18 2016'}
+
         """
         cli_output = dict()
         if type(commands) is not list:
@@ -168,7 +171,8 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
         for command in commands:
             output = self._send_command(command)
-            if 'Incorrect usage' in output:
+            #OneOS error message if the command is not valid
+            if ('Syntax error' or 'syntax error') in output:  
                 raise ValueError('Unable to execute command "{}"'.format(command))
             cli_output.setdefault(command, {})
             cli_output[command] = output
@@ -178,10 +182,14 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
     def save_config(self):
         """
-        Saves the config of the WLC, uses the paramiko save_config() function
+        ** Not a Napalm function **
+        Saves the config of the device, uses the paramiko save_config() function        
         """
-        output = self.device.save_config()
-        return output
+        try:
+            output = self.device.save_config()
+            return True
+        except:
+            return False
 
 
     def get_config(self, retrieve='all'):
@@ -211,6 +219,8 @@ class Oneaccess_oneosDriver(NetworkDriver):
         """
         Extract the uptime string from the given OneAccess.
         Return the uptime in seconds as an integer
+
+        credit @mwallraf 
         """
         # Initialize to zero
         (days, hours, minutes, seconds) = (0, 0, 0, 0)
@@ -226,22 +236,6 @@ class Oneaccess_oneosDriver(NetworkDriver):
                       + (minutes * 60) + seconds
 
         return uptime_sec
-
-
-    def get_dns(self):
-        """Return local DNS or name-server settings"""
-
-        dns = {
-            "domain_name": None
-        }
-
-        show_ip_nameserver = self._send_command('show ip name-server')
-
-        for l in show_ip_nameserver.splitlines():
-            if "Domain-name" in l:
-                dns["domain_name"] = l.split()[-1]
-                continue
-        return dns
 
 
     def get_tacacs_server(self):
@@ -277,39 +271,29 @@ class Oneaccess_oneosDriver(NetworkDriver):
         return tacacs_server
 
     def get_facts(self):
-        """Return a set of facts from the device.
-           The management interface can only be found if Tacacs is configured
-             with a source interface
+        """Return a set of facts from the device.        
         """
-
         facts = {
-            "vendor": "OneAccess",
-            "uptime": None,
+            "vendor": "Ekinops OneAccess",
+            "uptime": None,  #converted in seconds
             "os_version": None,
             "boot_version": None,
             "serial_number": None,
-            "device_id": None,
             "model": None,
             "hostname": None,
-            "fqdn": None,
-            "mgmt_interface": None
+            "fqdn": None
         }
 
         # get output from device
         show_system_status = self._send_command('show system status')
         show_system_hardware = self._send_command('show system hardware')
         show_hostname = self._send_command('hostname')
-        show_ip_int_brie = self._send_command('show ip int brief')
-        show_nameserver = self.get_dns()
-        tacacs = self.get_tacacs_server()
-        if len(tacacs["servers"]) > 0:
-            facts["mgmt_interface"] = tacacs["servers"][0]["source_interface"]
+        show_ip_int_brie = self._send_command('show ip int brief')                           
 
         for l in show_system_status.splitlines():
             if "System Information" in l:
                 c = l.split()
                 facts["serial_number"] = c[-1]
-                facts["device_id"] = c[-3]
                 continue
             if "Software version" in l:
                 facts["os_version"] = l.split()[-1]
@@ -317,7 +301,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
             if "Boot version" in l:
                 facts["boot_version"] = l.split()[-1]
                 continue
-            if "Sys Up time" in l:
+            if "Sys Up time" in l: 
                 uptime_str = l.split(":")[-1]
                 facts["uptime"] = self.parse_uptime(uptime_str)
                 continue
@@ -327,13 +311,14 @@ class Oneaccess_oneosDriver(NetworkDriver):
             if m:
                 facts["model"] = m.groupdict()["MODEL"]
                 break
-
+        
         for l in show_hostname.splitlines():
             if l:
                 facts["hostname"] = l.strip()
                 break
 
-        facts["fqdn"] = "{}.{}".format(facts["hostname"], show_nameserver["domain_name"])
+        #No local FQDN to retrieve that I know of on a OneAccess device
+        facts["fqdn"] = "N/A" 
 
         return facts
 
