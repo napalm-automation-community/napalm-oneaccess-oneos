@@ -130,7 +130,8 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
     @staticmethod
     def _send_command_postprocess(output):
-        return output.strip()
+        output = output.strip()
+        return output
 
     def is_alive(self):
         """Returns a flag with the state of the connection.
@@ -198,24 +199,27 @@ class Oneaccess_oneosDriver(NetworkDriver):
             return False
 
 
-    def get_config(self, retrieve='all'):
-        """Implementation of get_config for Cisco WLC.
-        Returns the running configuration as dictionary.
-        The keys of the dictionary represent the type of configuration
-        (startup or running). The candidate is always empty string,
-        since IOS does not support candidate configuration.
+    def get_config(self, retrieve='all',full=False, sanitized=False):
         """
-
-        configs = {
-            'startup': '',
-            'running': '',
-            'candidate': '',
-        }
+        Return the configuration of a device.
+        Args:
+        retrieve(string): Which configuration type you want to populate, default is all of them.
+                          Note with OneAccess device there is no "candidate" show run.
+                          so the value can only be "all" , "running" or "startup"
+        full(bool): NOT IMPLEMENTED, concept not present on OneAccess
+        sanitized(bool): NOT IMPLEMENTED (but could be done), Remove secret data. Default: ``False``.
+        """
+        configs = {'startup': '','running': '','candidate': ''}
 
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
             configs['running'] = output
+
+        if retrieve in ('startup', 'all'):
+            command = [ 'cat /BSA/config/bsaStart.cfg' ]
+            output = self._send_command(command)
+            configs['startup'] = output
 
         return configs
 
@@ -245,36 +249,41 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
 
     def get_tacacs_server(self):
-        """Return output for 'get tacacs-server'"""
+        """Return output for 'get tacacs-server'
+        Code retrieved from @mwallraf. 
+        Needs to be fixed and validated but not urgent as not part of official napalm librairy. 
+        """
+        raise NotImplementedError
+ 
 
-        tacacs_server = {
-            "servers": []
-        }
+        # tacacs_server = {
+        #     "servers": []
+        # }
 
-        rexSrv = re.compile('^\s*(?P<IP>\S+)\s+(?P<PORT>\S+)\s+(?P<KEY>\S+)(?:\s+(?P<INT>\S+ [0-9]\S*))?(?:\s+(?P<VRF>\S+))?$')
-        # get output
-        show_tacacs_server = self._send_command("show tacacs-server")
+        # rexSrv = re.compile('^\s*(?P<IP>\S+)\s+(?P<PORT>\S+)\s+(?P<KEY>\S+)(?:\s+(?P<INT>\S+ [0-9]\S*))?(?:\s+(?P<VRF>\S+))?$')
+        # # get output
+        # show_tacacs_server = self._send_command("show tacacs-server")
 
-        start_parsing = False
-        for l in show_tacacs_server.splitlines():
-            l = l.strip()
-            if 'Port' in l:
-                start_parsing = True
-                continue
-            if not start_parsing:
-                continue
-            m = rexSrv.match(l)
-            if m:
-                tacacs_server["servers"].append({
-                    "server": m.groupdict()["IP"],
-                    "port": m.groupdict()["PORT"],
-                    "key": m.groupdict()["KEY"],
-                    "is_encrypted": True,
-                    "source_interface": m.groupdict().get("INT", None) or None,
-                    "vrf": m.groupdict().get("VRF", None) or None
-                })
+        # start_parsing = False
+        # for l in show_tacacs_server.splitlines():
+        #     l = l.strip()
+        #     if 'Port' in l:
+        #         start_parsing = True
+        #         continue
+        #     if not start_parsing:
+        #         continue
+        #     m = rexSrv.match(l)
+        #     if m:
+        #         tacacs_server["servers"].append({
+        #             "server": m.groupdict()["IP"],
+        #             "port": m.groupdict()["PORT"],
+        #             "key": m.groupdict()["KEY"],
+        #             "is_encrypted": True,
+        #             "source_interface": m.groupdict().get("INT", None) or None,
+        #             "vrf": m.groupdict().get("VRF", None) or None
+        #         })
 
-        return tacacs_server
+        # return tacacs_server
 
     def get_facts(self):
         """Return a set of facts from the device.        
@@ -333,112 +342,6 @@ class Oneaccess_oneosDriver(NetworkDriver):
         facts["fqdn"] = "N/A" 
 
         return facts
-
-
-    def get_netflow(self):
-        """
-        Get Netflow facts:
-
-        netwflow: {
-            "cache_timeout_active": xx,
-            "cahce_timeout_inactive": xx,
-            "exporters": [
-            ],
-            monitors: [
-            ],
-            interfaces: [
-            ]
-        }
-
-        """
-        netflow = {
-            "cache_timeout_active": None,
-            "cache_timeout_inactive": None,
-            "exporters": [],
-            "monitors": [],
-            "interfaces": []
-        }
-
-        cmd_stats = "show flow cache statistics"
-        cmd_exporters = "show flow exporter"
-        cmd_monitors = "show flow monitor"
-        cmd_interfaces = "show flow interface"
-
-        # get output from device
-        show_stats = self._send_command(cmd_stats)
-        show_exporters = self._send_command(cmd_exporters)
-        show_monitors = self._send_command(cmd_monitors)
-        show_interfaces = self._send_command(cmd_interfaces)
-
-        for l in show_stats.splitlines():
-            if 'Inactive' in l:
-                netflow["cache_timeout_inactive"] = l.split()[-2]
-                continue
-            if 'Active timer' in l:
-                netflow["cache_timeout_active"] = l.split()[2]
-                continue
-
-        exporter = None
-        for l in show_exporters.splitlines():
-            if l.startswith("Flow exporter"):
-                if exporter:
-                    netflow["exporters"].append(exporter)
-                exporter = { 
-                    "exporter": l.split()[-1].replace(":", ""),
-                    "dest": None,
-                    "dest_port": None,
-                    "src": None
-                }
-                continue
-            if exporter and "destination address" in l:
-                c = l.split()[-1].split(":")
-                exporter["dest"] = c[0]
-                if len(c) > 1:
-                    exporter["dest_port"] = c[1]
-                continue
-            if exporter and "source address" in l:
-                exporter["src"] = l.split()[-1]
-                continue
-        if exporter:
-            netflow["exporters"].append(exporter)
-
-        monitor = None
-        for l in show_monitors.splitlines():
-            if l.startswith("Flow monitor"):
-                if monitor:
-                    netflow["monitors"].append(monitor)
-                monitor = {
-                    "monitor": l.split()[-1].replace(":", ""),
-                    "exporter": None
-                }
-                continue
-            if monitor and " exporter " in l:
-                monitor["exporter"] = l.split()[-1]
-                continue
-        if monitor:
-            netflow["monitors"].append(monitor)
-
-        intf = None
-        for l in show_interfaces.splitlines():
-            if l and not l.startswith(" ") and l.endswith(":"):
-                if intf:
-                    netflow["interfaces"].append(intf)
-                intf = {
-                    "interface": l.replace(":", ""),
-                    "monitor-in": None,
-                    "monitor-out": None
-                }
-                continue
-            if intf and "flow monitor input" in l:
-                intf["monitor-in"] = l.split()[-1]
-                continue
-            if intf and "flow monitor output" in l:
-                intf["monitor-out"] = l.split()[-1]
-                continue
-        if intf:
-            netflow["interfaces"].append(intf)
-
-        return netflow
 
 
     def get_interfaces_ip(self):
