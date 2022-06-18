@@ -66,6 +66,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
         You can Create an object as per below example:
         Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',optional_args = {'transport' : 'telnet'})         
         """
+        
         self.device = None
         self.hostname = hostname
         self.username = username
@@ -468,26 +469,35 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
         INTERNET_ADDRESS = r"\s+(?:Internet address is|Secondary address is)"
         INTERNET_ADDRESS += r" (?P<ip>{})/(?P<prefix>\d+)".format(IPV4_ADDR_REGEX)
-        LINK_LOCAL_ADDRESS = (
-            r"\s+IPv6 is enabled, link-local address is (?P<ip>[a-fA-F0-9:]+)"
-        )
-        GLOBAL_ADDRESS = (
-            r"\s+(?P<ip>[a-fA-F0-9:]+), subnet is (?:[a-fA-F0-9:]+)/(?P<prefix>\d+)"
-        )
+
+        IPV6_ADDR = r"\s+(?:IPv6 address is)"
+        IPV6_ADDR += r" (?P<ip>{})/(?P<prefix>\d+)".format(IPV6_ADDR_REGEX)
 
         interfaces = {}
         for line in show_ip_interface.splitlines():
             if len(line.strip()) == 0:
                 continue
-            if line[0] != " ":
+            if line[0] != " ": #Extract interface name
                 ipv4 = {}
+                ipv6 = {}
                 interface_name = line.split(" is ")[0]
-            m = re.match(INTERNET_ADDRESS, line)
+                continue
+
+            #Extract IPv4 and prefix
+            m = re.match(INTERNET_ADDRESS, line) 
             if m:
                 ip, prefix = m.groups()
                 ipv4.update({ip: {"prefix_length": int(prefix)}})
                 interfaces[interface_name] = {"ipv4": ipv4}
+                continue
 
+            #Extract IPv6 and prefix
+            m = re.match(IPV6_ADDR, line)                       
+            if m:                
+                ip, prefix = m.groups()                
+                ipv6.update({ip: {"prefix_length": int(prefix)}})
+                interfaces[interface_name] = {"ipv6": ipv6}
+                
         return interfaces
 
 
