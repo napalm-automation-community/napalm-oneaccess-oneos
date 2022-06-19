@@ -479,12 +479,30 @@ class Oneaccess_oneosDriver(NetworkDriver):
                  * capacity (float) - Capacity in W that the power supply can support
                  * output (float) - Watts drawn by the system
             * cpu is a dictionary of dictionaries where the key is the ID and the values
-                 * %usage
+                 * %usage  - average CPU usage on the last minute
+                 e.g. {'cpu': {'0': {'%usage': 9.0},'1': {'%usage': 1.0}},
             * memory is a dictionary with:
                  * available_ram (int) - Total amount of RAM installed in the device
                  * used_ram (int) - RAM in use in the device
         """
 
-        environment = {}
+        environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}}
+
+        if self.get_oneos_gen() == 6:
+            cpu_status = self._send_command('show system status | begin "last 72 hours"')
+            """
+            FYI, you get an output like this on OS6 with this command:
+            One2515#show system status | begin "last 72 hours"
+            Core    Type     last sec  last min  last hour  last day  last 72 hours
+            0     control      6.0 %    14.0 %      6.0 %     4.0 %      2.0 %
+            1  forwarding      1.0 %     1.0 %      1.0 %     0.0 %      0.0 %
+            One2515#
+            """                        
+            cpu_status = cpu_status.splitlines()[1:-1]
+            for cpu in cpu_status: #for each cores (can be several)
+                cpu = cpu.split()                               
+                environment["cpu"][cpu[0]] = {}
+                #Extract the CPU usage at 1min
+                environment["cpu"][cpu[0]]["%usage"] = float(cpu[4])
 
         return environment
