@@ -65,7 +65,8 @@ class Oneaccess_oneosDriver(NetworkDriver):
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):
         """Constructor.
         You can Create an object as per below example:
-        Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',optional_args = {'transport' : 'telnet'})         
+        Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',optional_args = {'transport' : 'telnet'})
+        Default transport protocol is ssh
         """
         
         self.device = None
@@ -73,6 +74,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
         self.username = username
         self.password = password
         self.timeout = timeout
+        self.oneos_gen = None  #OneOs generation version (5 or 6)
 
         if optional_args is None:
             optional_args = {}
@@ -84,18 +86,14 @@ class Oneaccess_oneosDriver(NetworkDriver):
         default_port = {"ssh": 22, "telnet": 23}
         self.netmiko_optional_args.setdefault("port", default_port[self.transport])
 
-
         #not sure if really needed
         if self.transport == "telnet":
             # Telnet only supports inline_transfer
             self.inline_transfer = True
 
-        #Don't know the purpose
-        # self.profile = [ "oneaccess_oneos_ssh" ]
-
 
     def open(self):
-        """Implement the NAPALM method open (mandatory)"""
+        """Open connection to device"""
         device_type = 'oneaccess_oneos'
 
         if self.transport == "telnet":
@@ -124,6 +122,8 @@ class Oneaccess_oneosDriver(NetworkDriver):
             return self._send_command_postprocess(output)
         except (socket.error, EOFError) as e:
             raise ConnectionClosedException(str(e))
+ 
+
 
     @staticmethod
     def _send_command_postprocess(output):
@@ -183,6 +183,26 @@ class Oneaccess_oneosDriver(NetworkDriver):
             cli_output[command] = output
 
         return cli_output
+
+    def get_oneos_gen(self):
+        """
+        Return the OneOs generation version (OneOS5 or OneOS6).
+        Since it's not something which can change on a device,
+        we only send a command to the device the first time
+        :return int: 5, 6 or -1 (if unknown)         
+        """
+        if self.oneos_gen != None:
+            return self.oneos_gen
+
+        version = self._send_command("show version | include version")
+        if "-6." in version:
+            self.oneos_gen = 6
+        elif "-V5." in version:
+            self.oneos_gen = 5
+        else:
+            self.oneos_gen = -1 #OS generation version Unknown
+
+        return self.oneos_gen
 
 
     def save_config(self):
@@ -245,44 +265,6 @@ class Oneaccess_oneosDriver(NetworkDriver):
                       + (minutes * 60) + seconds
 
         return uptime_sec
-
-
-    def get_tacacs_server(self):
-        """Return output for 'get tacacs-server'
-        Code retrieved from @mwallraf. 
-        Needs to be fixed and validated but not urgent as not part of official napalm librairy. 
-        """
-        raise NotImplementedError
- 
-
-        # tacacs_server = {
-        #     "servers": []
-        # }
-
-        # rexSrv = re.compile('^\s*(?P<IP>\S+)\s+(?P<PORT>\S+)\s+(?P<KEY>\S+)(?:\s+(?P<INT>\S+ [0-9]\S*))?(?:\s+(?P<VRF>\S+))?$')
-        # # get output
-        # show_tacacs_server = self._send_command("show tacacs-server")
-
-        # start_parsing = False
-        # for l in show_tacacs_server.splitlines():
-        #     l = l.strip()
-        #     if 'Port' in l:
-        #         start_parsing = True
-        #         continue
-        #     if not start_parsing:
-        #         continue
-        #     m = rexSrv.match(l)
-        #     if m:
-        #         tacacs_server["servers"].append({
-        #             "server": m.groupdict()["IP"],
-        #             "port": m.groupdict()["PORT"],
-        #             "key": m.groupdict()["KEY"],
-        #             "is_encrypted": True,
-        #             "source_interface": m.groupdict().get("INT", None) or None,
-        #             "vrf": m.groupdict().get("VRF", None) or None
-        #         })
-
-        # return tacacs_server
 
     def get_facts(self):
         """Return a set of facts from the device.        
@@ -480,3 +462,29 @@ class Oneaccess_oneosDriver(NetworkDriver):
             arp_table.append(entry)
 
         return arp_table
+
+
+    def get_environment(self):
+        """
+        Returns a dictionary where:
+
+            * fans is a dictionary of dictionaries where the key is the location and the values:
+                 * status (True/False) - True if it's ok, false if it's broken
+            * temperature is a dict of dictionaries where the key is the location and the values:
+                 * temperature (float) - Temperature in celsius the sensor is reporting.
+                 * is_alert (True/False) - True if the temperature is above the alert threshold
+                 * is_critical (True/False) - True if the temp is above the critical threshold
+            * power is a dictionary of dictionaries where the key is the PSU id and the values:
+                 * status (True/False) - True if it's ok, false if it's broken
+                 * capacity (float) - Capacity in W that the power supply can support
+                 * output (float) - Watts drawn by the system
+            * cpu is a dictionary of dictionaries where the key is the ID and the values
+                 * %usage
+            * memory is a dictionary with:
+                 * available_ram (int) - Total amount of RAM installed in the device
+                 * used_ram (int) - RAM in use in the device
+        """
+
+        environment = {}
+
+        return environment
