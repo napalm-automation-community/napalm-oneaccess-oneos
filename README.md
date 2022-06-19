@@ -1,116 +1,59 @@
-# napalm-oneaccess_oneos
+# napalm-oneaccess-oneos
 
-Congratulations! You are going to embark on an epic adventure that will bring you glory, fame and
-fortune.
+** UNDER CONSTRUCTION **
 
-> “Don't wish, Miss Tick had said. Do things.”
-> -- Terry Pratchett
+## NAPALM
 
-## Instructions
+[NAPALM](https://github.com/napalm-automation/napalm) (Network Automation and Programmability Abstraction Layer with Multivendor support) is a Python library that implements a set of functions to interact with different router vendor devices using a unified API.
 
-### Before starting
+NAPALM supports several methods to connect to the devices, to manipulate configurations or to retrieve data.
 
-1. Pick a name. Something that can easily identify which NOS you are supporting. From now on we will
-call it `SKELETON` so everytime you see `SKELETON` on this repo, replace it with the name you just
-picked.
-1. Let the `napalm` community know that you are planning to write a new driver. You can try reaching
-out on slack or on the mailing list. Someone will create a repo for you under the
-[`napalm-automation-community`](https://github.com/napalm-automation-community) organization. You
-can host your own driver if you prefer but we think it's more interesting if we can host all of the
-drivers together.
-You can find more details regarding the [Community drivers guidelines](http://napalm.readthedocs.io/en/develop/contributing/drivers.html).
-1. Feel free to amend the Copyright holder.
+## napalm-oneaccess-oneos
+NAPALM driver for <b>Ekinops OneAccess</b> devices
+Connection to the device is done through a SSH or telnet connection using the netmiko librairy. 
 
-### Replacing the oneaccess_oneos to the new repo
+# Supported devices
 
-After cloning this repository, you can bootstrap a new repository for
-your driver using the following commands (keep `oneaccess_oneos` as is, but
-replace `newname` and `NewName` appropriately):
+All OneAccess devices running OneOS 5 or OneOs 6
+(CLI commands are mostly indentical between OS5 and OS6)
 
-```sh
-git archive --prefix=napalm-newname/ HEAD | tar -C .. -xf -
-cd ../napalm-newname
-grep -rl oneaccess_oneos | xargs sed -i"" s/oneaccess_oneos/newname/g
-grep -rl Oneaccess_oneos | xargs sed -i"" s/Oneaccess_oneos/NewName/g
-for d in $(find . -type d -name '*oneaccess_oneos*'); do mv $d ${d/oneaccess_oneos/newname}; done
-for f in $(find . -type f -name '*oneaccess_oneos*'); do mv $f ${f/oneaccess_oneos/newname}; done
-for f in $(find . -type f -name '*Oneaccess_oneos*'); do mv $f ${f/Oneaccess_oneos/NewName}; done
-git init
-git add .
+OS5 devices includes: One100, One420, One425, One540, One1540, One270, One700, One2515
+OS6 devices includes: One421, One521, One531, One2501, One526, One2515, One2540, One3540, 1647, 1651, OneOS6-LIM and v600 virtual Router
+
+# Supported functions
+
+- :white_check_mark: is_alive()
+- :white_check_mark: get_facts()
+- :white_check_mark: get_interfaces_ip()
+- :white_check_mark: get_arp_table()
+- :white_check_mark: get_config()
+- :white_check_mark: cli()
+
+
+## Usage
+
+You can use this driver like this:
+
+```python
+from napalm import get_network_driver
+
+device = get_network_driver("oneaccess_oneos")
+device = device("192.168.2.1", "admin", "password",)
+device.open()
+print(device.get_facts())
 ```
 
-Alternatively, you can replace the first two commands by using the
-*Use this template* button in GitHub interface.
+If you want to custom some connection parameter, example: the transport protocol or the port connected to the device, you should use `optional_args`, it is exactly the same as `netmiko.BaseConnection.__init__`:
+optional_args = {'transport' : 'telnet'}
+```python
+from napalm import get_network_driver
 
-### Fixing the `README.md` and `AUTHORS`
-
-1. Replace the occurrences on this file of `SKELETON`. Replace only the ones above
-the `CUTTING_LINE`. Don't bother about `pypi`, `travis`, etc. That will be taking care of later,
-after the first merge.
-1. Feel free to replace the content of AUTHORS as well and put yourself there. That's what will
-bring you the fame and fortune after all ;)
-1. Add any other useful information on the `README.md` file you think it's interesting.
-
-### The Driver
-
-All the code should be inside `napalm_oneaccess_oneos`. You are free to organize your code as you want,
-however, there are some parts that have to be done in a certain way:
-
-* `napalm_oneaccess_oneos/__init__.py` - That file should import your class driver. That's what the
-dynamic importer will expect.
-* `napalm_oneaccess_oneos/oneaccess_oneos.py` - Here goes your driver.
-* `napalm_oneaccess_oneos/templates/` - We use this folder to store templates used by the `load_template`
-method.
-* `napalm_oneaccess_oneos/utils/` - For consistency with other repos we recommend putting your additional
-code here. Helper functions or anything you want to keep out of the main driver file.
-* `napalm_oneaccess_oneos/utils/textfsm_templates` - For consistency as well, we recommend keeping your
-`textfsm` templates here. We are planning to do some stuff around here so might have some common
-code that will assume they are there.
-* `MANIFEST.in` - If you need some additional support files that are not code, don't forget to add
-them to this file. Please, don't forget to set the correct paths.
-
-### The Tests
-
-Code for testing is inside the `test` folder.
-
-* `test/unit/TestDriver.py` - Here goes the following classes:
-  * `TestConfigDriver` - Tests for configuration management related methods.
-  * `TestGetterDriver` - Tests for getters.
-  * `FakeDevice` - Test double for your device.
-* `test/unit/oneaccess_oneos/` - Here goes some configuration files that are used by `TestConfigDriver`.
-* `test/unit/oneaccess_oneos/mock_data/` - Here goes files that contain mocked data used by
-                                    `TestGetterDriver`.
-
-#### Testing configuration management methods
-
-This is tricky. Cloud CI services like `Travis-CI` don't support running virtual machines and
-we currently don't have the resources or the means to test from a cloud service or with real
-machines. Moreover, mocking this might be very difficult and error prone. Vendors like changing
-the internal with every minor release and we might have end up mocking several parts of the system
-that are undocumented and have hundreds of edge cases. The only way we could safely mock this is
-if vendors would provide us with their parsers and that's not going to happen. Because of these
-reasons, the only safe way of testing is by using a VM or physical machine and testing manually
-every time someone pushes code that changes a configuration management method. Luckily, these are
-limited so once they are stable we can forget about them.
-
-If there is a VM available, please, provide a vagrant environment and use it for the tests,
-that way other developers will be able to test as well.
-
-If you want Travis CI for your new driver (once hosted under the
-[`napalm-automation-community`](https://github.com/napalm-automation-community)
-organization), just let us know and we'll enable it for you.
-
-#### Testing getters
-
-This is easier, we can use a real machine or just mock the device. Write a test double for your
-device and provide the necessary mocked data.
-
-After you implement one or more methods, make sure the driver respects the base
-NAPALM API. To check this, simply execute ``tox`` on the command line.
-
-### Other files
-
-Some other stuff you have to do:
-
-* `setup.py` - Set yourself as the author and set the correct `name`.
-* `requirements.txt` - Make sure requirements are up to date.
+device = get_network_driver("oneaccess_oneos")
+conn_args = {
+    "port": 2333,
+    "transport": "telnet"
+}
+device = device("192.168.10.2", "admin", "password",optional_args=conn_args)
+device.open()
+print(device.get_interfaces_ip())
+```

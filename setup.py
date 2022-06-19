@@ -4,23 +4,22 @@ import uuid
 
 from setuptools import setup, find_packages
 
-__author__ = 'David Barroso <dbarrosop@dravetech.com>'
+__author__ = 'Robin Guillat <robin@guillat.com>'
 
 with open("requirements.txt", "r") as fs:
     reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
 
 setup(
-    name="napalm-oneaccess_oneos",
+    name="napalm-oneaccess-oneos",
     version="0.1.0",
     packages=find_packages(),
-    author="David Barroso",
-    author_email="dbarrosop@dravetech.com",
-    description="Network Automation and Programmability Abstraction Layer with Multivendor support",
+    author="Robin Guillat",
+    author_email="robin@guillat.com",
+    description="NAPALM driver for OneAccess devices over Telnet or SSH",
     classifiers=[
         'Topic :: Utilities',
          'Programming Language :: Python',
-         'Programming Language :: Python :: 2',
-         'Programming Language :: Python :: 2.7',
+         'Programming Language :: Python :: 3',
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS',
     ],
