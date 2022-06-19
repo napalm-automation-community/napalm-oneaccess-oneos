@@ -19,7 +19,7 @@ All OneAccess devices running OneOS 5 or OneOs 6
 
 <b>OS5 devices including:</b> One100, One420, One425, One540, One1540, One270, One700, One2515
 \
-<b>OS6 devices including:</b> One421, One521, One531, One2501, One526, One2515, One2540, One3540, 1647, 1651, OneOS6-LIM and v600 virtual Router\
+<b>OS6 devices including:</b> One421, One521, One531, One2501, One526, One2515, One2540, One3540, 1647, 1651, OneOS6-LIM and v600 virtual Router
 
 # Supported functions
 
