@@ -1,0 +1,8 @@
+
+Protocol Address  Hardware Address   Timeout      Interface              Type
+99.1.1.1          70:fc:8c:16:99:99  -
+10.1.1.1          70:fc:8c:0b:1f:88  01:28:01     Bvi 1                  ARPA
+172.16.30.1       6a:fc:8c:25:56:53  01:57:13     GigabitEthernet 1/0.5  ARPA
+99.1.1.2          70:fc:8c:16:99:92  -            Bvi 1                  ARPA
+172.16.30.23      52:54:00:13:e9:2b  01:58:54     GigabitEthernet 1/0.5  ARPA
+

@@ -26,6 +26,7 @@ import pprint
 import telnetlib
 import netmiko
 from napalm.base import NetworkDriver
+import napalm.base.helpers
 from napalm.base.exceptions import (
     ConnectionException,
     SessionLockedException,
@@ -93,8 +94,6 @@ class Oneaccess_oneosDriver(NetworkDriver):
         # self.profile = [ "oneaccess_oneos_ssh" ]
 
 
-
-
     def open(self):
         """Implement the NAPALM method open (mandatory)"""
         device_type = 'oneaccess_oneos'
@@ -108,8 +107,6 @@ class Oneaccess_oneosDriver(NetworkDriver):
     def close(self):
         """Implement the NAPALM method close (mandatory)"""
         self._netmiko_close()
-
-
 
 
     def _send_command(self, command):
@@ -132,6 +129,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
     def _send_command_postprocess(output):
         output = output.strip()
         return output
+
 
     def is_alive(self):
         """Returns a flag with the state of the connection.
@@ -217,7 +215,8 @@ class Oneaccess_oneosDriver(NetworkDriver):
             configs['running'] = output
 
         if retrieve in ('startup', 'all'):
-            command = [ 'cat /BSA/config/bsaStart.cfg' ]
+            #method working for both OneOS5 and OneOs6
+            command = [ 'cat /BSA/config/bsaStart.cfg' ] 
             output = self._send_command(command)
             configs['startup'] = output
 
@@ -403,4 +402,81 @@ class Oneaccess_oneosDriver(NetworkDriver):
                 
         return interfaces
 
+    def get_arp_table(self, vrf=""):
 
+        """
+        Returns a list of dictionaries having the following set of keys:
+            * interface (string)
+            * mac (string)
+            * ip (string)
+            * age (float)  -  ** Not specified in the base driver, so I assumed converted in second here **
+
+        'vrf' of null-string will default to the non-vrf default domain. 
+
+        In all cases the same data structure is returned and no reference to the VRF that was used
+        is included in the output.
+
+        Example::
+
+            [
+                {
+                    'interface' : 'GigabitEthernet 1/0.5',
+                    'mac'       : '5C:5E:AB:DA:3C:F0',
+                    'ip'        : '172.17.17.1',
+                    'age'       :  6596.0
+                },
+                {
+                    'interface' : 'GigabitEthernet 0/0',
+                    'mac'       : '5C:5E:AB:DA:3C:FF',
+                    'ip'        : '172.17.17.2',
+                    'age'       : 6923.0
+                }
+            ]
+        """
+        if vrf:
+            command = "show arp vrf {}".format(vrf)
+        else:
+            command = "show arp"
+
+        arp_table = []
+        output = self._send_command(command)
+        output = output.split("\n")
+        output = output[1:] # Skip the first line which is a header      
+
+        for line in output:                          
+            arp_data = list(filter(None, line.split('  ')))             
+            """for reference, here how our arp_data list will be like this:
+            # dynamic: ['172.16.30.1', ' 6a:fc:8c:25:56:53', '01:59:06', ' GigabitEthernet 1/0.5', 'ARPA ']
+            # static OS6: ['99.1.1.2', '70:fc:8c:16:99:92', '-']  (no interface and no age)
+            # static OS5: ['99.1.1.1', '70:fc:8c:16:99:99', '-', 'Bvi 5', 'ARPA']
+            """
+            if len(line) == 0 or len(arp_data) < 3:                 
+                continue   #skip lines which are not arp data
+
+            #If no timeout/age, set it to -1
+            if arp_data[2] == "-": 
+                age_sec = -1.0
+            else: #convert hh:mm:ss to seconds
+                fields = arp_data[2].split(":")
+                if len(fields) == 3:
+                    try:
+                        fields = [float(x) for x in fields]
+                        hours, minutes, seconds = fields
+                        age_sec = 3600 * hours + 60 * minutes + seconds
+                    except ValueError:
+                        age_sec = -1.0
+                            
+            if len(arp_data) < 4:
+                 interface = '' #if no interface retrieve, set to empty string
+            else:
+                interface = arp_data[3]
+
+            entry = {
+                "interface": interface.strip(),
+                "mac": arp_data[1].strip().upper(),
+                "ip": arp_data[0],
+                "age": age_sec,
+            }
+            arp_table.append(entry)
+
+        return arp_table
