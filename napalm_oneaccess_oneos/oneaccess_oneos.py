@@ -63,18 +63,23 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
 
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):
-        """Constructor.
-        You can Create an object as per below example:
-        Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',optional_args = {'transport' : 'telnet'})
-        Default transport protocol is ssh
         """
-        
+        Contructor for the class Oneaccess_oneosDriver
+
+        :param hostname: The IP address or hostname of the device you want to connect to
+        :param username: The username to use to login to the router
+        :param password: The password to use for authentication
+        :param timeout: The amount of time to wait for the device to respond to a command, defaults to 60
+        (optional)
+        :param optional_args: 
+        """
+      
         self.device = None
         self.hostname = hostname
         self.username = username
         self.password = password
         self.timeout = timeout
-        self.oneos_gen = None  #OneOs generation version (5 or 6)
+        self.oneos_gen = None  #OneOs generation OneOS5 or OneOS6
 
         if optional_args is None:
             optional_args = {}
@@ -132,31 +137,37 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
 
     def is_alive(self):
-        """Returns a flag with the state of the connection.
-           Logic copied from cisco ios driver
-        """
-        null = chr(0)
-        if self.device is None:
-            return {'is_alive': False}
+        # """Returns a flag with the state of the connection.
+        #    Logic copied from cisco ios driver
+        # """
+        # null = chr(0)
+        # if self.device is None:
+        #     return {'is_alive': False}
 
-        if self.transport == "telnet":
-            try:
-                # Try sending IAC + NOP (IAC is telnet way of sending command
-                # IAC = Interpret as Command (it comes before the NOP)
-                self.device.write_channel(telnetlib.IAC + telnetlib.NOP)
-                return {"is_alive": True}
-            except AttributeError:
-                return {"is_alive": False}
-        else:
-        # SSH
-            try:
-                # Try sending ASCII null byte to maintain the connection alive
-                self.device.write_channel(null)
-                return {'is_alive': self.device.remote_conn.transport.is_active()}
-            except (socket.error, EOFError):
-                # If unable to send, we can tell for sure that the connection is unusable
-                return {'is_alive': False}
-        return {'is_alive': False}
+        # if self.transport == "telnet":
+        #     try:
+        #         # Try sending IAC + NOP (IAC is telnet way of sending command
+        #         # IAC = Interpret as Command (it comes before the NOP)
+        #         self.device.write_channel(telnetlib.IAC + telnetlib.NOP)
+        #         return {"is_alive": True}
+        #     except AttributeError:
+        #         return {"is_alive": False}
+        # else:
+        # # SSH
+        #     try:
+        #         # Try sending ASCII null byte to maintain the connection alive
+        #         self.device.write_channel(null)
+        #         return {'is_alive': self.device.remote_conn.transport.is_active()}
+        #     except (socket.error, EOFError):
+        #         # If unable to send, we can tell for sure that the connection is unusable
+        #         return {'is_alive': False}
+        # return {'is_alive': False}
+        # """Return flag with the state of the connection."""
+        # print(self.device)
+        # if self.device is None:
+        #     return {"is_alive": False}
+        # return {"is_alive": self.device._session.transport.is_active()}
+        raise NotImplementedError()
 
 
     def cli(self, commands):
@@ -196,11 +207,11 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
         version = self._send_command("show version | include version")
         if "-6." in version:
-            self.oneos_gen = 6
+            self.oneos_gen = "OneOS6"
         elif "-V5." in version:
-            self.oneos_gen = 5
+            self.oneos_gen = "OneOS5"
         else:
-            self.oneos_gen = -1 #OS generation version Unknown
+            self.oneos_gen = "Unknown" #OS generation version Unknown
 
         return self.oneos_gen
 
@@ -268,11 +279,12 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
     def get_facts(self):
         """Return a set of facts from the device.        
-        """
+        """        
         facts = {
             "vendor": "Ekinops OneAccess",
             "uptime": None,  #converted in seconds
             "os_version": None,
+            "os_generation": self.get_oneos_gen(),
             "boot_version": None,
             "serial_number": None,
             "model": None,
@@ -488,7 +500,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
         environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}}
 
-        if self.get_oneos_gen() == 6:
+        if self.get_oneos_gen() == "OneOS6":
             cpu_status = self._send_command('show system status | begin "last 72 hours"')
             """
             FYI, you get an output like this on OS6 with this command:
