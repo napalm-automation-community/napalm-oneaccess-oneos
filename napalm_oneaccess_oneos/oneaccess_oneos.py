@@ -492,7 +492,8 @@ class OneaccessOneosDriver(NetworkDriver):
                  * capacity (float) - Capacity in W that the power supply can support
                  * output (float) - Watts drawn by the system
             * cpu is a dictionary of dictionaries where the key is the ID and the values
-                 * %usage  - average CPU usage on the last minute
+                 * %usage  - In OS6 the average for the last 1min is retrieve wheread for OS5 is 
+                             for the last 5min
                  e.g. {'cpu': {'0': {'%usage': 9.0},'1': {'%usage': 1.0}},
             * memory is a dictionary with:
                  * available_ram (int) - Total amount of RAM installed in the device
@@ -502,6 +503,7 @@ class OneaccessOneosDriver(NetworkDriver):
         environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}}
 
         if self.oneos_gen == "OneOS6":
+            #CPU stats
             cpu_status = self._send_command('show system status | begin "last 72 hours"')
             """
             FYI, you get an output like this on OS6 with this command:
@@ -514,8 +516,18 @@ class OneaccessOneosDriver(NetworkDriver):
             cpu_status = cpu_status.splitlines()[1:]            
             for cpu in cpu_status: #for each cores (can be several)
                 cpu = cpu.split()                               
-                environment["cpu"][cpu[0]] = {}
+                environment["cpu"][int(cpu[0])] = {}
                 #Extract the CPU usage at 1min
-                environment["cpu"][cpu[0]]["%usage"] = float(cpu[4])
+                environment["cpu"][int(cpu[0])]["%usage"] = float(cpu[4])
+
+        else: #OneOS5
+            #CPU Stats
+            cpu_status = self._send_command('show system status | include Average CPU load')
+            """FYI, you get an output like this (only 1 core shown, and for 5min average stats):
+            Average CPU load (5 / 60 Minutes)         : 8.2% / 7.5%
+            """            
+            cpu_status = re.findall('\d*.\d*%', cpu_status)[0].replace('%','')
+            environment["cpu"][0] = {}
+            environment["cpu"][0]["%usage"] = float(cpu_status)            
 
         return environment
