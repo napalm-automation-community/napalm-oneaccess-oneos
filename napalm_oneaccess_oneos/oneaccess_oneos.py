@@ -56,6 +56,13 @@ IPV6_ADDR_REGEX = "(?:{}|{}|{})".format(
     IPV6_ADDR_REGEX_1, IPV6_ADDR_REGEX_2, IPV6_ADDR_REGEX_3
 )
 
+"""
+OneOS5 and OneOS6 behavior difference observed:
+- on ssh, the output of OneOS6 adds an extra line with the prompt
+
+"""
+
+
 
 
 class OneaccessOneosDriver(NetworkDriver):
@@ -84,7 +91,7 @@ class OneaccessOneosDriver(NetworkDriver):
         if optional_args is None:
             optional_args = {}
 
-        self.netmiko_optional_args = netmiko_args(optional_args)
+        self.netmiko_optional_args = netmiko_args(optional_args)    
 
         self.transport = optional_args.get("transport", "ssh")        
         # Set the default port if not set
@@ -106,6 +113,14 @@ class OneaccessOneosDriver(NetworkDriver):
 
         self.device = self._netmiko_open(device_type, netmiko_optional_args=self.netmiko_optional_args)
 
+        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it
+        version = self.device.send_command("show version | include version")
+        if "-6." in version:
+            self.oneos_gen = "OneOS6"
+        elif "-V5." in version:
+           self.oneos_gen =  "OneOS5"
+        else:
+            self.oneos_gen = "Unknown" #OS generation version Unknown
 
     def close(self):
         """Implement the NAPALM method close (mandatory)"""
@@ -124,6 +139,10 @@ class OneaccessOneosDriver(NetworkDriver):
                         break
             else:
                 output = self.device.send_command(command)
+            
+            #remove empty trailing line with device prompt we get when we are using ssh on OS6
+            if self.transport == "ssh" and self.oneos_gen == "OneOS6":
+                output = '\n'.join(output.split('\n')[:-1])
             return self._send_command_postprocess(output)
         except (socket.error, EOFError) as e:
             raise ConnectionClosedException(str(e))
@@ -131,8 +150,10 @@ class OneaccessOneosDriver(NetworkDriver):
 
 
     @staticmethod
-    def _send_command_postprocess(output):
+    def _send_command_postprocess(output):        
         output = output.strip()
+        
+
         return output
 
 
@@ -194,26 +215,6 @@ class OneaccessOneosDriver(NetworkDriver):
             cli_output[command] = output
 
         return cli_output
-
-    def get_oneos_gen(self):
-        """
-        Return the OneOs generation version (OneOS5 or OneOS6).
-        Since it's not something which can change on a device,
-        we only send a command to the device the first time
-        :return int: 5, 6 or -1 (if unknown)         
-        """
-        if self.oneos_gen != None:
-            return self.oneos_gen
-
-        version = self._send_command("show version | include version")
-        if "-6." in version:
-            self.oneos_gen = "OneOS6"
-        elif "-V5." in version:
-            self.oneos_gen = "OneOS5"
-        else:
-            self.oneos_gen = "Unknown" #OS generation version Unknown
-
-        return self.oneos_gen
 
 
     def save_config(self):
@@ -284,7 +285,7 @@ class OneaccessOneosDriver(NetworkDriver):
             "vendor": "Ekinops OneAccess",
             "uptime": None,  #converted in seconds
             "os_version": None,
-            "os_generation": self.get_oneos_gen(),
+            "os_generation": self.oneos_gen,
             "boot_version": None,
             "serial_number": None,
             "model": None,
@@ -332,7 +333,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 facts["interface_list"].append(interface)                            
 
         #No local FQDN to retrieve on a OneAccess device
-        facts["fqdn"] = "N/A" 
+        facts["fqdn"] = "" 
 
         return facts
 
@@ -500,7 +501,7 @@ class OneaccessOneosDriver(NetworkDriver):
 
         environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}}
 
-        if self.get_oneos_gen() == "OneOS6":
+        if self.oneos_gen == "OneOS6":
             cpu_status = self._send_command('show system status | begin "last 72 hours"')
             """
             FYI, you get an output like this on OS6 with this command:
@@ -509,8 +510,8 @@ class OneaccessOneosDriver(NetworkDriver):
             0     control      6.0 %    14.0 %      6.0 %     4.0 %      2.0 %
             1  forwarding      1.0 %     1.0 %      1.0 %     0.0 %      0.0 %
             One2515#
-            """                        
-            cpu_status = cpu_status.splitlines()[1:-1]
+            """                                 
+            cpu_status = cpu_status.splitlines()[1:]            
             for cpu in cpu_status: #for each cores (can be several)
                 cpu = cpu.split()                               
                 environment["cpu"][cpu[0]] = {}
