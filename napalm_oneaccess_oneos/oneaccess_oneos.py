@@ -58,7 +58,7 @@ IPV6_ADDR_REGEX = "(?:{}|{}|{})".format(
 
 
 
-class Oneaccess_oneosDriver(NetworkDriver):
+class OneaccessOneosDriver(NetworkDriver):
     """Napalm driver for Oneaccess_oneos."""
 
 

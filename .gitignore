@@ -1,7 +1,7 @@
 #temp folder
 temp/
 
-TESTS.py
+TESTS*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
