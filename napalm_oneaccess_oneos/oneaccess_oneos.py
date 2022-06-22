@@ -487,10 +487,9 @@ class OneaccessOneosDriver(NetworkDriver):
                  * temperature (float) - Temperature in celsius the sensor is reporting.
                  * is_alert (True/False) - True if the temperature is above the alert threshold
                  * is_critical (True/False) - True if the temp is above the critical threshold
-            * power is a dictionary of dictionaries where the key is the PSU id and the values:
-                 * status (True/False) - True if it's ok, false if it's broken
-                 * capacity (float) - Capacity in W that the power supply can support
-                 * output (float) - Watts drawn by the system
+                Data only available for some OneOS6 Hardware
+            * power
+                 ** Not implemented ** 
             * cpu is a dictionary of dictionaries where the key is the ID and the values
                  * %usage  - In OS6 the average for the last 1min is retrieve wheread for OS5 is 
                              for the last 5min
@@ -503,25 +502,48 @@ class OneaccessOneosDriver(NetworkDriver):
         environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}}
 
         if self.oneos_gen == "OneOS6":
-            #CPU stats
-            cpu_status = self._send_command('show system status | begin "last 72 hours"')
+            ####### CPU stats ########
+            cpu_status = self._send_command('show system cpu')
             """
             FYI, you get an output like this on OS6 with this command:
-            One2515#show system status | begin "last 72 hours"
+            One2515#show system cpu
+
             Core    Type     last sec  last min  last hour  last day  last 72 hours
             0     control      6.0 %    14.0 %      6.0 %     4.0 %      2.0 %
             1  forwarding      1.0 %     1.0 %      1.0 %     0.0 %      0.0 %
             One2515#
             """                                 
-            cpu_status = cpu_status.splitlines()[1:]            
+            cpu_status = cpu_status.splitlines()[2:]            
             for cpu in cpu_status: #for each cores (can be several)
                 cpu = cpu.split()                               
                 environment["cpu"][int(cpu[0])] = {}
                 #Extract the CPU usage at 1min
                 environment["cpu"][int(cpu[0])]["%usage"] = float(cpu[4])
+            
+            ####### Temperatures ########            
+            temperatures = self._send_command('show system status | include "alarm level:"')
+            """ Output example;
+            One2515#show system status | include "alarm level:
+              CPU     normal   86.25 C (alarm level: 100.00 C)
+              board sensor 1     normal   49.75 C (alarm level:  80.00 C)
+            """
+            #Only a some hardware have Temperatures values available
+            if temperatures:
+                temperatures = temperatures.splitlines()
+                for temp in temperatures:
+                    temp = temp.split()
+                    current_temp = float(temp[2])
+                    temp_alert = float(temp[6])
+                    #Let's considere a critical temperature as 10% above the alarm threshold
+                    temp_critical = temp_alert * 1.1 
+                    environment["temperature"][temp[0]] ={}
+                    environment["temperature"][temp[0]]["temperature"] = current_temp
+                    environment["temperature"][temp[0]]["is_alert"] = current_temp >= temp_alert       
+                    environment["temperature"][temp[0]]["is_critical"] = current_temp >= temp_critical
+
 
         else: #OneOS5
-            #CPU Stats
+            ####### CPU stats ########
             cpu_status = self._send_command('show system status | include Average CPU load')
             """FYI, you get an output like this (only 1 core shown, and for 5min average stats):
             Average CPU load (5 / 60 Minutes)         : 8.2% / 7.5%
@@ -529,5 +551,8 @@ class OneaccessOneosDriver(NetworkDriver):
             cpu_status = re.findall('\d*.\d*%', cpu_status)[0].replace('%','')
             environment["cpu"][0] = {}
             environment["cpu"][0]["%usage"] = float(cpu_status)            
+
+
+            #no temperature data for OS5 implemented
 
         return environment

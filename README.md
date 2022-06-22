@@ -14,7 +14,7 @@ Connection to the device is done through a SSH or telnet connection using the ne
 
 # Supported devices
 
-All OneAccess devices running OneOS 5 or OneOs 6
+All OneAccess devices running OneOS v5 or OneOS v6
 (CLI commands are mostly indentical between OS5 and OS6)
 
 <b>OS5 devices including:</b> One100, One420, One425, One540, One1540, One270, One700, One2515
