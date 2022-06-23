@@ -512,8 +512,8 @@ class OneaccessOneosDriver(NetworkDriver):
             0     control      6.0 %    14.0 %      6.0 %     4.0 %      2.0 %
             1  forwarding      1.0 %     1.0 %      1.0 %     0.0 %      0.0 %
             One2515#
-            """                                 
-            cpu_status = cpu_status.splitlines()[2:]            
+            """ 
+            cpu_status = cpu_status.splitlines()[1:]
             for cpu in cpu_status: #for each cores (can be several)
                 cpu = cpu.split()                               
                 environment["cpu"][int(cpu[0])] = {}
@@ -530,16 +530,19 @@ class OneaccessOneosDriver(NetworkDriver):
             #Only a some hardware have Temperatures values available
             if temperatures:
                 temperatures = temperatures.splitlines()
-                for temp in temperatures:
-                    temp = temp.split()
-                    current_temp = float(temp[2])
-                    temp_alert = float(temp[6])
-                    #Let's considere a critical temperature as 10% above the alarm threshold
-                    temp_critical = temp_alert * 1.1 
-                    environment["temperature"][temp[0]] ={}
-                    environment["temperature"][temp[0]]["temperature"] = current_temp
-                    environment["temperature"][temp[0]]["is_alert"] = current_temp >= temp_alert       
-                    environment["temperature"][temp[0]]["is_critical"] = current_temp >= temp_critical
+                for temp_line in temperatures:           
+                    sensor_name = temp_line.strip().split("  ")[0]
+                    temp_line = re.findall('\d+\.\d. C', temp_line)
+                
+                    current_temp = float(temp_line[0].replace('C',''))
+                    temp_alert = float(temp_line[1].replace('C',''))
+
+                    # #Let's considere a critical temperature as 10% above the alarm threshold
+                    temp_critical = round(temp_alert * 1.1 , 2)
+                    environment["temperature"][sensor_name] ={}
+                    environment["temperature"][sensor_name]["temperature"] = current_temp
+                    environment["temperature"][sensor_name]["is_alert"] = current_temp >= temp_alert       
+                    environment["temperature"][sensor_name]["is_critical"] = current_temp >= temp_critical
 
 
         else: #OneOS5
