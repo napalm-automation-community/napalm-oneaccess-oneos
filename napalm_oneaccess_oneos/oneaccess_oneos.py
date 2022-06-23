@@ -87,6 +87,7 @@ class OneaccessOneosDriver(NetworkDriver):
         self.password = password
         self.timeout = timeout
         self.oneos_gen = None  #OneOs generation OneOS5 or OneOS6
+        self.prompt_os6 = None
 
         if optional_args is None:
             optional_args = {}
@@ -112,9 +113,18 @@ class OneaccessOneosDriver(NetworkDriver):
             device_type = 'oneaccess_oneos_telnet'
 
         self.device = self._netmiko_open(device_type, netmiko_optional_args=self.netmiko_optional_args)
-
-        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it
-        version = self.device.send_command("show version | include version")
+                
+        """ 
+        We extract the prompt of the device based on the hostname so that we can remove it from 
+        the output of the send_command if it appears (only for some commands on os6 with SSH we have an
+        extra line returned in the cli output)
+        Note we use the parent send_command() here and not _send_command()
+        """    
+        self.prompt_os6 = re.findall('.+[^#]', self.device.send_command('hostname'))[0].replace('\n','') 
+        self.prompt_os6 += "#"
+                
+        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it        
+        version = self._send_command("show version | include version")        
         if "-6." in version:
             self.oneos_gen = "OneOS6"
         elif "-V5." in version:
@@ -140,9 +150,9 @@ class OneaccessOneosDriver(NetworkDriver):
             else:
                 output = self.device.send_command(command)
             
-            #remove empty trailing line with device prompt we get when we are using ssh on OS6
-            if self.transport == "ssh" and self.oneos_gen == "OneOS6":
-                output = '\n'.join(output.split('\n')[:-1])
+            if output.splitlines()[-1] == self.prompt_os6:                
+                output = output[:- len(self.prompt_os6)]
+
             return self._send_command_postprocess(output)
         except (socket.error, EOFError) as e:
             raise ConnectionClosedException(str(e))
@@ -482,7 +492,7 @@ class OneaccessOneosDriver(NetworkDriver):
         Returns a dictionary where:
 
             * fans is a dictionary of dictionaries where the key is the location and the values:
-                 * status (True/False) - True if it's ok, false if it's broken
+                 ** Not Implemented **
             * temperature is a dict of dictionaries where the key is the location and the values:
                  * temperature (float) - Temperature in celsius the sensor is reporting.
                  * is_alert (True/False) - True if the temperature is above the alert threshold
@@ -499,7 +509,7 @@ class OneaccessOneosDriver(NetworkDriver):
                  * used_ram (int) - RAM in use in the device
         """
 
-        environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}}
+        environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}, "memory":{}}
 
         if self.oneos_gen == "OneOS6":
             ####### CPU stats ########
@@ -514,8 +524,11 @@ class OneaccessOneosDriver(NetworkDriver):
             One2515#
             """ 
             cpu_status = cpu_status.splitlines()[1:]
-            for cpu in cpu_status: #for each cores (can be several)
-                cpu = cpu.split()                               
+            for cpu in cpu_status: #for each cores (can be several)                
+                cpu = cpu.split()                
+                if(len(cpu)) < 3: #exit loop if not a valid cpu line
+                    continue
+
                 environment["cpu"][int(cpu[0])] = {}
                 #Extract the CPU usage at 1min
                 environment["cpu"][int(cpu[0])]["%usage"] = float(cpu[4])
@@ -530,10 +543,12 @@ class OneaccessOneosDriver(NetworkDriver):
             #Only a some hardware have Temperatures values available
             if temperatures:
                 temperatures = temperatures.splitlines()
-                for temp_line in temperatures:           
+                for temp_line in temperatures:
+    
                     sensor_name = temp_line.strip().split("  ")[0]
-                    temp_line = re.findall('\d+\.\d. C', temp_line)
-                
+                    temp_line = re.findall('\d+\.\d. C', temp_line)                    
+                    if not temp_line: #exit loop if not a valid temp line
+                        continue   
                     current_temp = float(temp_line[0].replace('C',''))
                     temp_alert = float(temp_line[1].replace('C',''))
 
@@ -544,6 +559,16 @@ class OneaccessOneosDriver(NetworkDriver):
                     environment["temperature"][sensor_name]["is_alert"] = current_temp >= temp_alert       
                     environment["temperature"][sensor_name]["is_critical"] = current_temp >= temp_critical
 
+
+            ####### RAM Memory ########
+            ram_info = self._send_command('show expert system ram-usage | include Mem')
+            print (ram_info)
+            ram_info = ram_info.split()
+            print (ram_info)
+            # environment["memory"]["available_ram"] ={}
+            # environment["memory"]["used_ram"] = {}
+            environment["memory"]["available_ram"] = ram_info[6]
+            environment["memory"]["used_ram"] = ram_info[2]
 
         else: #OneOS5
             ####### CPU stats ########
