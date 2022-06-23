@@ -1,6 +1,6 @@
 # napalm-oneaccess-oneos
 
-** UNDER CONSTRUCTION **
+** Project under active iteration **
 
 ## NAPALM
 
