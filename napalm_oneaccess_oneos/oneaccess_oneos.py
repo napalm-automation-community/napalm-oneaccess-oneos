@@ -168,37 +168,10 @@ class OneaccessOneosDriver(NetworkDriver):
 
 
     def is_alive(self):
-        # """Returns a flag with the state of the connection.
-        #    Logic copied from cisco ios driver
-        # """
-        # null = chr(0)
-        # if self.device is None:
-        #     return {'is_alive': False}
-
-        # if self.transport == "telnet":
-        #     try:
-        #         # Try sending IAC + NOP (IAC is telnet way of sending command
-        #         # IAC = Interpret as Command (it comes before the NOP)
-        #         self.device.write_channel(telnetlib.IAC + telnetlib.NOP)
-        #         return {"is_alive": True}
-        #     except AttributeError:
-        #         return {"is_alive": False}
-        # else:
-        # # SSH
-        #     try:
-        #         # Try sending ASCII null byte to maintain the connection alive
-        #         self.device.write_channel(null)
-        #         return {'is_alive': self.device.remote_conn.transport.is_active()}
-        #     except (socket.error, EOFError):
-        #         # If unable to send, we can tell for sure that the connection is unusable
-        #         return {'is_alive': False}
-        # return {'is_alive': False}
-        # """Return flag with the state of the connection."""
-        # print(self.device)
-        # if self.device is None:
-        #     return {"is_alive": False}
-        # return {"is_alive": self.device._session.transport.is_active()}
-        raise NotImplementedError()
+        """Returns a flag with the state of the connection."""
+        if self.device is None:
+            return {"is_alive": False}        
+        return {"is_alive": self.device.is_alive()}
 
 
     def cli(self, commands):
@@ -505,8 +478,8 @@ class OneaccessOneosDriver(NetworkDriver):
                              for the last 5min
                  e.g. {'cpu': {'0': {'%usage': 9.0},'1': {'%usage': 1.0}},
             * memory is a dictionary with:
-                 * available_ram (int) - Total amount of RAM installed in the device
-                 * used_ram (int) - RAM in use in the device
+                 * available_ram (int) - Total amount of RAM in Kbytes installed in the device
+                 * used_ram (int) - RAM in Kbytes in use in the device
         """
 
         environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}, "memory":{}}
@@ -532,7 +505,15 @@ class OneaccessOneosDriver(NetworkDriver):
                 environment["cpu"][int(cpu[0])] = {}
                 #Extract the CPU usage at 1min
                 environment["cpu"][int(cpu[0])]["%usage"] = float(cpu[4])
-            
+
+            ####### RAM Memory ########
+            ram_info = self._send_command('show expert system ram-usage | include Mem')
+            ram_info = ram_info.split()
+            #convert Mb returned value to Kb
+            environment["memory"]["available_ram"] = int(ram_info[6]) * 1000
+            environment["memory"]["used_ram"] = int(ram_info[2]) * 1000
+
+
             ####### Temperatures ########            
             temperatures = self._send_command('show system status | include "alarm level:"')
             """ Output example;
@@ -559,17 +540,6 @@ class OneaccessOneosDriver(NetworkDriver):
                     environment["temperature"][sensor_name]["is_alert"] = current_temp >= temp_alert       
                     environment["temperature"][sensor_name]["is_critical"] = current_temp >= temp_critical
 
-
-            ####### RAM Memory ########
-            ram_info = self._send_command('show expert system ram-usage | include Mem')
-            print (ram_info)
-            ram_info = ram_info.split()
-            print (ram_info)
-            # environment["memory"]["available_ram"] ={}
-            # environment["memory"]["used_ram"] = {}
-            environment["memory"]["available_ram"] = ram_info[6]
-            environment["memory"]["used_ram"] = ram_info[2]
-
         else: #OneOS5
             ####### CPU stats ########
             cpu_status = self._send_command('show system status | include Average CPU load')
@@ -579,8 +549,12 @@ class OneaccessOneosDriver(NetworkDriver):
             cpu_status = re.findall('\d*.\d*%', cpu_status)[0].replace('%','')
             environment["cpu"][0] = {}
             environment["cpu"][0]["%usage"] = float(cpu_status)            
-
-
-            #no temperature data for OS5 implemented
+            
+            ####### RAM Memory ########
+            ram_info = self._send_command('show memory | begin Dynamic').splitlines()[1:3]
+            environment["memory"]["used_ram"] = int(ram_info[0].split('|')[2].replace(' ',''))
+            environment["memory"]["available_ram"] = int(ram_info[1].split('|')[2].replace(' ',''))
+            
+            ####### no temperature data implemented for OS5 ########
 
         return environment
