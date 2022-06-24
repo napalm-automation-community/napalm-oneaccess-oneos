@@ -13,6 +13,6 @@
 # the License.
 
 """napalm-oneaccess_oneos package."""
-from napalm_oneaccess_oneos.oneaccess_oneos import Oneaccess_oneosDriver  # noqa
+from napalm_oneaccess_oneos.oneaccess_oneos import OneaccessOneosDriver  # noqa
 
-__all__ = ('Oneaccess_oneosDriver',)
+__all__ = ('OneaccessOneosDriver',)

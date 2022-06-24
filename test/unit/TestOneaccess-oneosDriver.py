@@ -16,11 +16,11 @@
 
 import unittest
 
-from napalm_oneaccess_oneos import oneaccess_oneos
+from napalm_oneaccess_oneos import OneaccessOneosDriver
 from napalm.base.test.base import TestConfigNetworkDriver
 
 
-class TestConfigOneaccess_oneosDriver(unittest.TestCase, TestConfigNetworkDriver):
+class TestConfigOneaccessOneosDriver(unittest.TestCase, TestConfigNetworkDriver):
     """Group of tests that test Configuration related methods."""
 
     @classmethod
@@ -32,7 +32,7 @@ class TestConfigOneaccess_oneosDriver(unittest.TestCase, TestConfigNetworkDriver
         cls.vendor = 'oneaccess_oneos'
 
         optional_args = {'port': 12443, }
-        cls.device = oneaccess_oneos.Oneaccess_oneosDriver(hostname, username, password, timeout=60,
+        cls.device = oneaccess_oneos.OneaccessOneosDriver(hostname, username, password, timeout=60,
                                              optional_args=optional_args)
         cls.device.open()
 

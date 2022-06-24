@@ -1,0 +1,4 @@
+One2515#show expert system ram-usage
+              total        used        free      shared  buff/cache   available
+Mem:            920         545          65          41         309         333
+Swap:             0           0           0

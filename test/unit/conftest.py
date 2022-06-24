@@ -16,8 +16,8 @@ def set_device_parameters(request):
         request.cls.device.close()
     request.addfinalizer(fin)
 
-    request.cls.driver = oneaccess_oneos.Oneaccess_oneosDriver
-    request.cls.patched_driver = PatchedOneaccess_oneosDriver
+    request.cls.driver = oneaccess_oneos.OneaccessOneosDriver
+    request.cls.patched_driver = PatchedOneaccessOneosDriver
     request.cls.vendor = 'oneaccess_oneos'
     parent_conftest.set_device_parameters(request)
 
@@ -27,19 +27,19 @@ def pytest_generate_tests(metafunc):
     parent_conftest.pytest_generate_tests(metafunc, __file__)
 
 
-class PatchedOneaccess_oneosDriver(oneaccess_oneos.Oneaccess_oneosDriver):
-    """Patched Oneaccess_oneos Driver."""
+class PatchedOneaccessOneosDriver(oneaccess_oneos.OneaccessOneosDriver):
+    """Patched OneaccessOneos Driver."""
 
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):
-        """Patched Oneaccess_oneos Driver constructor."""
+        """Patched OneaccessOneos Driver constructor."""
         super().__init__(hostname, username, password, timeout, optional_args)
 
         self.patched_attrs = ['device']
-        self.device = FakeOneaccess_oneosDevice()
+        self.device = FakeOneaccessOneosDevice()
 
 
-class FakeOneaccess_oneosDevice(BaseTestDouble):
-    """Oneaccess_oneos device test double."""
+class FakeOneaccessOneosDevice(BaseTestDouble):
+    """OneaccessOneos device test double."""
 
     def run_commands(self, command_list, encoding='json'):
         """Fake run_commands."""

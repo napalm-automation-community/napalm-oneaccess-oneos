@@ -19,10 +19,6 @@ Napalm driver for Oneaccess_oneos.
 Read https://napalm.readthedocs.io for more information.
 """
 
-### temp 
-import pprint
-#####
-
 import telnetlib
 import netmiko
 from napalm.base import NetworkDriver
@@ -56,53 +52,84 @@ IPV6_ADDR_REGEX = "(?:{}|{}|{})".format(
     IPV6_ADDR_REGEX_1, IPV6_ADDR_REGEX_2, IPV6_ADDR_REGEX_3
 )
 
+"""
+OneOS5 and OneOS6 behavior difference observed:
+- on ssh, the output of OneOS6 adds an extra line with the prompt
+
+"""
 
 
-class Oneaccess_oneosDriver(NetworkDriver):
+
+
+class OneaccessOneosDriver(NetworkDriver):
     """Napalm driver for Oneaccess_oneos."""
 
 
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):
-        """Constructor.
-        You can Create an object as per below example:
-        Oneaccess_oneosDriver('172.16.30.214', 'admin','admin',optional_args = {'transport' : 'telnet'})         
         """
-        
+        Contructor for the class Oneaccess_oneosDriver
+
+        :param hostname: The IP address or hostname of the device you want to connect to
+        :param username: The username to use to login to the router
+        :param password: The password to use for authentication
+        :param timeout: The amount of time to wait for the device to respond to a command, defaults to 60
+        (optional)
+        :param optional_args: 
+        """
+      
         self.device = None
         self.hostname = hostname
         self.username = username
         self.password = password
         self.timeout = timeout
+        self.oneos_gen = None  #OneOs generation OneOS5 or OneOS6
+        self.prompt_os6 = None
 
         if optional_args is None:
             optional_args = {}
 
-        self.netmiko_optional_args = netmiko_args(optional_args)
+        self.netmiko_optional_args = netmiko_args(optional_args)    
 
         self.transport = optional_args.get("transport", "ssh")        
         # Set the default port if not set
         default_port = {"ssh": 22, "telnet": 23}
         self.netmiko_optional_args.setdefault("port", default_port[self.transport])
 
-
         #not sure if really needed
         if self.transport == "telnet":
             # Telnet only supports inline_transfer
             self.inline_transfer = True
 
-        #Don't know the purpose
-        # self.profile = [ "oneaccess_oneos_ssh" ]
-
 
     def open(self):
-        """Implement the NAPALM method open (mandatory)"""
+        """Open connection to device"""
         device_type = 'oneaccess_oneos'
 
         if self.transport == "telnet":
             device_type = 'oneaccess_oneos_telnet'
 
         self.device = self._netmiko_open(device_type, netmiko_optional_args=self.netmiko_optional_args)
+                
+        """ 
+        We extract the prompt of the device based on the hostname so that we can remove it from 
+        the output of the send_command if it appears (only for some commands on os6 with SSH we have an
+        extra line returned in the cli output)
+        Note we use the parent send_command() here and not _send_command()
+        """    
+        self.prompt_os6 = re.findall('.+[^#]', self.device.send_command('hostname'))[0].replace('\n','') 
+        self.prompt_os6 += "#"        
+        
+        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it              
+        version = self._send_command("show version | include version")        
+        if "-6." in version:
+            self.oneos_gen = "OneOS6"
+        elif "-V5." in version:
+           self.oneos_gen =  "OneOS5"
+        else:
+            self.oneos_gen = "Unknown" #OS generation version Unknown
 
+        #disable show output pagination as it can causes issues for some commands in the send_command
+        self._send_command("term len 0")
 
     def close(self):
         """Implement the NAPALM method close (mandatory)"""
@@ -121,42 +148,30 @@ class Oneaccess_oneosDriver(NetworkDriver):
                         break
             else:
                 output = self.device.send_command(command)
+            
+            output_lines= output.splitlines()
+            if output_lines and  output_lines[-1] == self.prompt_os6:                
+                output = output[:- len(self.prompt_os6)]
+
             return self._send_command_postprocess(output)
         except (socket.error, EOFError) as e:
             raise ConnectionClosedException(str(e))
+ 
+
 
     @staticmethod
-    def _send_command_postprocess(output):
+    def _send_command_postprocess(output):        
         output = output.strip()
+        
+
         return output
 
 
     def is_alive(self):
-        """Returns a flag with the state of the connection.
-           Logic copied from cisco ios driver
-        """
-        null = chr(0)
+        """Returns a flag with the state of the connection."""
         if self.device is None:
-            return {'is_alive': False}
-
-        if self.transport == "telnet":
-            try:
-                # Try sending IAC + NOP (IAC is telnet way of sending command
-                # IAC = Interpret as Command (it comes before the NOP)
-                self.device.write_channel(telnetlib.IAC + telnetlib.NOP)
-                return {"is_alive": True}
-            except AttributeError:
-                return {"is_alive": False}
-        else:
-        # SSH
-            try:
-                # Try sending ASCII null byte to maintain the connection alive
-                self.device.write_channel(null)
-                return {'is_alive': self.device.remote_conn.transport.is_active()}
-            except (socket.error, EOFError):
-                # If unable to send, we can tell for sure that the connection is unusable
-                return {'is_alive': False}
-        return {'is_alive': False}
+            return {"is_alive": False}        
+        return {"is_alive": self.device.is_alive()}
 
 
     def cli(self, commands):
@@ -212,7 +227,11 @@ class Oneaccess_oneosDriver(NetworkDriver):
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
-            configs['running'] = output
+            if self.oneos_gen == "OneOS6":
+                configs['running'] = output
+            else:
+                #in OS5 there is 3 added info line displayed with the show run that we need to remove
+                configs['running'] = output[52:]
 
         if retrieve in ('startup', 'all'):
             #method working for both OneOS5 and OneOs6
@@ -246,51 +265,14 @@ class Oneaccess_oneosDriver(NetworkDriver):
 
         return uptime_sec
 
-
-    def get_tacacs_server(self):
-        """Return output for 'get tacacs-server'
-        Code retrieved from @mwallraf. 
-        Needs to be fixed and validated but not urgent as not part of official napalm librairy. 
-        """
-        raise NotImplementedError
- 
-
-        # tacacs_server = {
-        #     "servers": []
-        # }
-
-        # rexSrv = re.compile('^\s*(?P<IP>\S+)\s+(?P<PORT>\S+)\s+(?P<KEY>\S+)(?:\s+(?P<INT>\S+ [0-9]\S*))?(?:\s+(?P<VRF>\S+))?$')
-        # # get output
-        # show_tacacs_server = self._send_command("show tacacs-server")
-
-        # start_parsing = False
-        # for l in show_tacacs_server.splitlines():
-        #     l = l.strip()
-        #     if 'Port' in l:
-        #         start_parsing = True
-        #         continue
-        #     if not start_parsing:
-        #         continue
-        #     m = rexSrv.match(l)
-        #     if m:
-        #         tacacs_server["servers"].append({
-        #             "server": m.groupdict()["IP"],
-        #             "port": m.groupdict()["PORT"],
-        #             "key": m.groupdict()["KEY"],
-        #             "is_encrypted": True,
-        #             "source_interface": m.groupdict().get("INT", None) or None,
-        #             "vrf": m.groupdict().get("VRF", None) or None
-        #         })
-
-        # return tacacs_server
-
     def get_facts(self):
         """Return a set of facts from the device.        
-        """
+        """        
         facts = {
             "vendor": "Ekinops OneAccess",
             "uptime": None,  #converted in seconds
             "os_version": None,
+            "os_generation": self.oneos_gen,
             "boot_version": None,
             "serial_number": None,
             "model": None,
@@ -338,7 +320,7 @@ class Oneaccess_oneosDriver(NetworkDriver):
                 facts["interface_list"].append(interface)                            
 
         #No local FQDN to retrieve on a OneAccess device
-        facts["fqdn"] = "N/A" 
+        facts["fqdn"] = "" 
 
         return facts
 
@@ -480,3 +462,103 @@ class Oneaccess_oneosDriver(NetworkDriver):
             arp_table.append(entry)
 
         return arp_table
+
+
+    def get_environment(self):
+        """
+        Returns a dictionary where:
+
+            * fans is a dictionary of dictionaries where the key is the location and the values:
+                 ** Not Implemented **
+            * temperature is a dict of dictionaries where the key is the location and the values:
+                 * temperature (float) - Temperature in celsius the sensor is reporting.
+                 * is_alert (True/False) - True if the temperature is above the alert threshold
+                 * is_critical (True/False) - True if the temp is above the critical threshold
+                Data only available for some OneOS6 Hardware
+            * power
+                 ** Not implemented ** 
+            * cpu is a dictionary of dictionaries where the key is the ID and the values
+                 * %usage  - In OS6 the average for the last 1min is retrieve wheread for OS5 is 
+                             for the last 5min
+                 e.g. {'cpu': {'0': {'%usage': 9.0},'1': {'%usage': 1.0}},
+            * memory is a dictionary with:
+                 * available_ram (int) - Total amount of RAM in Kbytes installed in the device
+                 * used_ram (int) - RAM in Kbytes in use in the device
+        """
+
+        environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}, "memory":{}}
+
+        if self.oneos_gen == "OneOS6":
+            ####### CPU stats ########
+            cpu_status = self._send_command('show system cpu')
+            """
+            FYI, you get an output like this on OS6 with this command:
+            One2515#show system cpu
+
+            Core    Type     last sec  last min  last hour  last day  last 72 hours
+            0     control      6.0 %    14.0 %      6.0 %     4.0 %      2.0 %
+            1  forwarding      1.0 %     1.0 %      1.0 %     0.0 %      0.0 %
+            One2515#
+            """ 
+            cpu_status = cpu_status.splitlines()[1:]
+            for cpu in cpu_status: #for each cores (can be several)                
+                cpu = cpu.split()                
+                if(len(cpu)) < 3: #exit loop if not a valid cpu line
+                    continue
+
+                environment["cpu"][int(cpu[0])] = {}
+                #Extract the CPU usage at 1min
+                environment["cpu"][int(cpu[0])]["%usage"] = float(cpu[4])
+
+            ####### RAM Memory ########
+            ram_info = self._send_command('show expert system ram-usage | include Mem')
+            ram_info = ram_info.split()
+            #convert Mb returned value to Kb
+            environment["memory"]["available_ram"] = int(ram_info[6]) * 1000
+            environment["memory"]["used_ram"] = int(ram_info[2]) * 1000
+
+
+            ####### Temperatures ########            
+            temperatures = self._send_command('show system status | include "alarm level:"')
+            """ Output example;
+            One2515#show system status | include "alarm level:
+              CPU     normal   86.25 C (alarm level: 100.00 C)
+              board sensor 1     normal   49.75 C (alarm level:  80.00 C)
+            """
+            #Only a some hardware have Temperatures values available
+            if temperatures:
+                temperatures = temperatures.splitlines()
+                for temp_line in temperatures:
+    
+                    sensor_name = temp_line.strip().split("  ")[0]
+                    temp_line = re.findall('\d+\.\d. C', temp_line)                    
+                    if not temp_line: #exit loop if not a valid temp line
+                        continue   
+                    current_temp = float(temp_line[0].replace('C',''))
+                    temp_alert = float(temp_line[1].replace('C',''))
+
+                    # #Let's considere a critical temperature as 10% above the alarm threshold
+                    temp_critical = round(temp_alert * 1.1 , 2)
+                    environment["temperature"][sensor_name] ={}
+                    environment["temperature"][sensor_name]["temperature"] = current_temp
+                    environment["temperature"][sensor_name]["is_alert"] = current_temp >= temp_alert       
+                    environment["temperature"][sensor_name]["is_critical"] = current_temp >= temp_critical
+
+        else: #OneOS5
+            ####### CPU stats ########
+            cpu_status = self._send_command('show system status | include Average CPU load')
+            """FYI, you get an output like this (only 1 core shown, and for 5min average stats):
+            Average CPU load (5 / 60 Minutes)         : 8.2% / 7.5%
+            """            
+            cpu_status = re.findall('\d*.\d*%', cpu_status)[0].replace('%','')
+            environment["cpu"][0] = {}
+            environment["cpu"][0]["%usage"] = float(cpu_status)            
+            
+            ####### RAM Memory ########
+            ram_info = self._send_command('show memory | begin Dynamic').splitlines()[1:3]
+            environment["memory"]["used_ram"] = int(ram_info[0].split('|')[2].replace(' ',''))
+            environment["memory"]["available_ram"] = int(ram_info[1].split('|')[2].replace(' ',''))
+            
+            ####### no temperature data implemented for OS5 ########
+
+        return environment
