@@ -18,7 +18,7 @@ Connection to the device is done through a SSH or telnet connection using the ne
 All OneAccess devices running OneOS v5.x or OneOS v6.x
 (CLI commands are mostly indentical between OS5 and OS6)
 
-On you can check your OneOS version with the command "show version" on your device, e.g
+On you can check your OneOS version with the command "show version" on your device
 
 
 # Supported functions
