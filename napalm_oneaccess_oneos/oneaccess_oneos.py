@@ -19,10 +19,6 @@ Napalm driver for Oneaccess_oneos.
 Read https://napalm.readthedocs.io for more information.
 """
 
-### temp 
-import pprint
-#####
-
 import telnetlib
 import netmiko
 from napalm.base import NetworkDriver
@@ -121,9 +117,9 @@ class OneaccessOneosDriver(NetworkDriver):
         Note we use the parent send_command() here and not _send_command()
         """    
         self.prompt_os6 = re.findall('.+[^#]', self.device.send_command('hostname'))[0].replace('\n','') 
-        self.prompt_os6 += "#"
-                
-        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it        
+        self.prompt_os6 += "#"        
+        
+        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it              
         version = self._send_command("show version | include version")        
         if "-6." in version:
             self.oneos_gen = "OneOS6"
@@ -131,6 +127,9 @@ class OneaccessOneosDriver(NetworkDriver):
            self.oneos_gen =  "OneOS5"
         else:
             self.oneos_gen = "Unknown" #OS generation version Unknown
+
+        #disable show output pagination as it can causes issues for some commands in the send_command
+        self._send_command("term len 0")
 
     def close(self):
         """Implement the NAPALM method close (mandatory)"""
@@ -150,7 +149,8 @@ class OneaccessOneosDriver(NetworkDriver):
             else:
                 output = self.device.send_command(command)
             
-            if output.splitlines()[-1] == self.prompt_os6:                
+            output_lines= output.splitlines()
+            if output_lines and  output_lines[-1] == self.prompt_os6:                
                 output = output[:- len(self.prompt_os6)]
 
             return self._send_command_postprocess(output)
@@ -227,7 +227,11 @@ class OneaccessOneosDriver(NetworkDriver):
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
-            configs['running'] = output
+            if self.oneos_gen == "OneOS6":
+                configs['running'] = output
+            else:
+                #in OS5 there is 3 added info line displayed with the show run that we need to remove
+                configs['running'] = output[52:]
 
         if retrieve in ('startup', 'all'):
             #method working for both OneOS5 and OneOs6
