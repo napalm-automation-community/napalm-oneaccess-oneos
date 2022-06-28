@@ -40,7 +40,7 @@ class PatchedOneaccessOneosDriver(oneaccess_oneos.OneaccessOneosDriver):
 
 class FakeOneaccessOneosDevice(BaseTestDouble):
     """OneaccessOneos device test double."""
-
+    
     def run_commands(self, command_list, encoding='json'):
         """Fake run_commands."""
         result = list()
