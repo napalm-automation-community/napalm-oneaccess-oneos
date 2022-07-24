@@ -325,6 +325,141 @@ class OneaccessOneosDriver(NetworkDriver):
         return facts
 
 
+    def get_interfaces(self):
+        """
+        Returns a dictionary of dictionaries. The keys for the first dictionary will be the \
+        interfaces in the devices. The inner dictionary will containing the following data for \
+        each interface:
+
+         * is_up (True/False)
+         * is_enabled (True/False)
+         * description (string)
+         * last_flapped (float in seconds)
+         * speed (int in Mbit)
+         * MTU (in Bytes)
+         * mac_address (string)
+        Example::
+
+            {
+            u'Management1':
+                {
+                'is_up': False,
+                'is_enabled': False,
+                'description': '',
+                'last_flapped': -1.0,
+                'speed': 1000,
+                'mtu': 1500,
+                'mac_address': 'FA:16:3E:57:33:61',
+                },
+        """
+        
+        interface_regex = r"^(.*?)is\s(up|down)" 
+        is_up_regex = r".*line\s+protocol\s+is\s+(\S+)" 
+
+        interfaces = {}
+
+        command = "show interface"
+        show_interface = self._send_command(command)
+        
+        interfaces = {}
+        for line in show_interface.splitlines():
+
+            #Extract Interface name, is_enabled and is_up status
+            m = re.match(interface_regex, line) 
+            if m:
+                result = m.groups()
+                interface_name = result[0].strip()
+                if interface_name == "Null 0": #internal null interface not relevant
+                    continue
+
+                is_enabled = bool("up" in result[1])
+                interfaces[interface_name] = {}
+                interfaces[interface_name]["is_enabled"] = is_enabled
+
+                #if interface is not enabled then it's not up
+                if is_enabled == False:  
+                    interfaces[interface_name]["is_up"] = False
+                    continue
+
+                #extract is_up operational status interface (line protocol)
+                m = re.match(is_up_regex, line)                 
+                if m:
+                    result = m.groups()                    
+                    is_up = bool("up" in result[0].strip())                    
+                    interfaces[interface_name]["is_up"] = is_up
+                    continue                
+
+
+            
+        
+        
+            # print(line)
+            # for pattern in (interface_regex_1, interface_regex_2,interface_regex_3):
+            #     interface_match = re.search(pattern, line)
+            #     if interface_match:
+            #         interface = interface_match.group(1)
+            #         status = interface_match.group(2)
+            #         print(interface)
+                    # print(status)
+
+
+                    # if "admin" in status.lower():
+                    #     is_enabled = False
+                    # else:
+                    #     is_enabled = True
+                    # if protocol:
+                    #     is_up = bool("up" in protocol)
+                    # else:
+                    #     is_up = bool("up" in status)
+                    # break
+
+
+
+
+            # #Extract IPv4 and prefix
+            # m = re.match(INTERNET_ADDRESS, line) 
+            # if m:
+            #     ip, prefix = m.groups()
+            #     ipv4.update({ip: {"prefix_length": int(prefix)}})
+            #     interfaces[interface_name] = {"ipv4": ipv4}
+            #     continue
+
+            # interface_regex_1 = r"^(\S+?)\s+is\s+(.+?),\s+line\s+protocol\s+is\s+(\S+)"
+            # interface_regex_2 = r"^(\S+)\s+is\s+(up|down)"
+            # interface_regex_3 = (
+            #     r"^(Control Plane Interface)"
+            #     r"\s+is\s+(.+?),\s+line\s+protocol\s+is\s+(\S+)"
+            # )
+            # for pattern in (interface_regex_1, interface_regex_2, interface_regex_3):
+            #     interface_match = re.search(pattern, line)
+            #     if interface_match:
+            #         interface = interface_match.group(1)
+            #         status = interface_match.group(2)
+            #         try:
+            #             protocol = interface_match.group(3)
+            #         except IndexError:
+            #             protocol = ""
+            #         if "admin" in status.lower():
+            #             is_enabled = False
+            #         else:
+            #             is_enabled = True
+            #         if protocol:
+            #             is_up = bool("up" in protocol)
+            #         else:
+            #             is_up = bool("up" in status)
+            #         break
+
+
+
+
+        return interfaces
+        
+
+
+
+
+
+
     def get_interfaces_ip(self):
         """
         Get interface ip details.
