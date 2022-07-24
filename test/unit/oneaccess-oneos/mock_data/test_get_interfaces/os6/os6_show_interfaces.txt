@@ -1,0 +1,145 @@
+GigabitEthernet 0/0 is up, line protocol is down
+  Flags: (0x1081) BROADCAST MULTICAST ARP, interface index is 524288
+  Encapsulation: Ethernet v2, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes
+  Down-time 01:55:57, status change count 0
+  Hardware address is 70:fc:8c:12:7e:8e, ARP timeout 7200 sec
+  Internet address is 192.168.0.1/24, broadcast address is 192.168.0.255
+  Unknown negotiation, duplex-unknown
+  Line speed unknown
+  media-type rj45
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+GigabitEthernet 0/0.4 is up, line protocol is down
+  Flags: (0x1080) BROADCAST MULTICAST ARP, interface index is 524292
+  Encapsulation: none, none, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes
+  Down-time 01:55:49, status change count 0
+  Hardware address is 70:fc:8c:12:7e:8e, ARP timeout 7200 sec
+  Internet address is 1.1.1.3/24, broadcast address is 1.1.1.255
+  Secondary address is 2.2.2.2/24
+  Secondary address is 2.2.3.1/30
+  Line speed unknown
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+GigabitEthernet 0/1 is up, line protocol is up
+  Flags: (0x10c1) BROADCAST MULTICAST ARP, interface index is 528384
+  Encapsulation: Ethernet v2, IPv4 MTU 1400 bytes, IPv6 MTU 1500 bytes
+  Up-time 26d3h9m, status change count 1
+  Hardware address is 70:fc:8c:16:7e:8e, ARP timeout 7200 sec
+  Unknown negotiation, duplex-unknown
+  Line speed unknown
+  media-type rj45
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+GigabitEthernet 1/0 is up, line protocol is up
+  Flags: (0x10c1) BROADCAST MULTICAST ARP, interface index is 589824
+  Encapsulation: Ethernet v2, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes
+  Up-time 01:55:55, status change count 1
+  Hardware address is 70:fc:8c:16:7e:8f, ARP timeout 7200 sec
+  IPv6 address is 2001:1234:5678:abce:72fc:8cff:fe16:7e8f/64
+  IPv6 address is fe80::72fc:8cff:fe16:7e8f/64
+  Auto-negotiation, full-duplex
+  Line speed 1000000 kbps
+  media-type rj45
+  Mean input/output rate 5728/6160 bits/s, 7/6 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  6994 packets, 1488932 bytes, 0 queue drops
+       3235 broadcasts, 1562 multicasts, 0 errors, 117 discards
+       0 unknown protocols
+  OUT: 2966 packets, 738734 bytes, 0 queue drops
+       9 broadcasts, 19 multicasts, 0 errors, 0 discards
+GigabitEthernet 1/0.5 is up, line protocol is up
+  Flags: (0x10c1) BROADCAST MULTICAST ARP, interface index is 589829
+  Description: WAN
+  Encapsulation: 802.1Q Virtual LAN, VLAN ID 5, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes
+  Up-time 01:55:49, status change count 1
+  Hardware address is 70:fc:8c:16:7e:8f, ARP timeout 7200 sec
+  Internet address is 172.16.30.214/24, broadcast address is 172.16.30.255
+  Line speed 1000000 kbps, bandwidth limit 90000 kbps
+  Mean input/output rate 5672/6160 bits/s, 7/6 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo+shaper, output queue length/depth 0/50
+  IN:  6821 packets, 1455774 bytes, 0 queue drops
+       3233 broadcasts, 1391 multicasts, 0 errors, 999 discards
+       0 unknown protocols
+  OUT: 2947 packets, 736612 bytes, 0 queue drops
+       9 broadcasts, 0 multicasts, 0 errors, 16 discards
+GigabitEthernet 2/0 is up, line protocol is down
+  Flags: (0x1081) BROADCAST MULTICAST ARP, interface index is 655360
+  Encapsulation: Ethernet v2, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes
+  Down-time 01:55:55, status change count 0
+  Hardware address is 70:fc:8c:1a:7e:8f, ARP timeout 7200 sec
+  Unknown negotiation, duplex-unknown
+  Line speed unknown
+  media-type rj45
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+Bvi 1 is up, line protocol is up
+  Flags: (0x10c1) BROADCAST MULTICAST, interface index is 268439552
+  Encapsulation: Ethernet v2, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes
+  Up-time 01:55:52, status change count 1
+  Hardware address is 70:fc:8c:12:7e:8e, ARP timeout 7200 sec
+  Internet address is 10.1.1.2/24, broadcast address is 10.1.1.255
+  Line speed unknown
+  Bridged to group 1
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  2 packets, 84 bytes, 0 queue drops
+       1 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 2 packets, 84 bytes, 0 queue drops
+       1 broadcasts, 0 multicasts, 0 errors, 0 discards
+Null 0 is up, line protocol is up
+  Flags: (0x1000) BROADCAST MULTICAST ARP, interface index is 1879048192
+  Description: Null 0
+  Up-time 01:53:45, status change count 0
+  Line speed unknown
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+L2tunnel 1 is up, line protocol is up
+  Flags: (0x10d1) POINT-TO-POINT MULTICAST, interface index is 1912733697
+  Encapsulation: Point-to-Point Protocol, IPv4 MTU 1600 bytes, IPv6 MTU 1600 bytes
+  Tunnel source 172.16.30.214, destination 172.16.30.115
+  Tunnel protocol/transport L2TP/IP
+  Up-time 01:54:48, status change count 1
+  Line speed unknown
+  Bridged to group 1
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Reliability: 255/255
+  Output queuing strategy: fifo, output queue length/depth 0/0
+  IN:  2 packets, 132 bytes, 0 queue drops
+       1 broadcasts, 0 multicasts, 0 errors, 0 discards
+       0 unknown protocols
+  OUT: 2 packets, 132 bytes, 0 queue drops
+       1 broadcasts, 0 multicasts, 0 errors, 0 discards
