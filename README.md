@@ -25,6 +25,7 @@ On you can check your OneOS version with the command "show version" on your devi
 
 - :white_check_mark: is_alive()
 - :white_check_mark: get_facts()
+- :white_check_mark: get_interfaces()
 - :white_check_mark: get_interfaces_ip()
 - :white_check_mark: get_environment()
 - :white_check_mark: get_arp_table()

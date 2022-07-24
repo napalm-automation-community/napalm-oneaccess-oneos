@@ -53,9 +53,9 @@ IPV6_ADDR_REGEX = "(?:{}|{}|{})".format(
 )
 
 """
+Misc notes:
 OneOS5 and OneOS6 behavior difference observed:
 - on ssh, the output of OneOS6 adds an extra line with the prompt
-
 """
 
 
@@ -340,22 +340,15 @@ class OneaccessOneosDriver(NetworkDriver):
          * mac_address (string)
         Example::
 
-            {
-            u'Management1':
-                {
-                'is_up': False,
-                'is_enabled': False,
-                'description': '',
-                'last_flapped': -1.0,
-                'speed': 1000,
-                'mtu': 1500,
-                'mac_address': 'FA:16:3E:57:33:61',
-                },
+        FastEthernet 1/0.100': {
+                        'description': 'WAN Interface',
+                        'is_enabled': True,
+                        'is_up': True,
+                        'last_flapped': 900,
+                        'mac_address': '70:FC:8C:1C:96:7A',
+                        'mtu': 1500,
+                        'speed': 100},
         """
-        
-        interface_regex = r"^(.*?)is\s(up|down)" 
-        is_up_regex = r".*line\s+protocol\s+is\s+(\S+)" 
-
         interfaces = {}
 
         command = "show interface"
@@ -365,92 +358,103 @@ class OneaccessOneosDriver(NetworkDriver):
         for line in show_interface.splitlines():
 
             #Extract Interface name, is_enabled and is_up status
-            m = re.match(interface_regex, line) 
-            if m:
-                result = m.groups()
-                interface_name = result[0].strip()
+            interface_regex = r"^(.*?)\sis\s(up|down).+line\s+protocol\s+is\s(up|down)" 
+            interface_match = re.match(interface_regex, line) 
+            if interface_match:                
+                interface_name = interface_match.groups()[0]
                 if interface_name == "Null 0": #internal null interface not relevant
                     continue
 
-                is_enabled = bool("up" in result[1])
+                is_enabled = bool("up" in interface_match.groups()[1])
                 interfaces[interface_name] = {}
                 interfaces[interface_name]["is_enabled"] = is_enabled
 
-                #if interface is not enabled then it's not up
+                #create all the keys associated to the interface with empty values
+                interfaces[interface_name]["description"] = ''
+                interfaces[interface_name]["mac_address"] = ''
+                interfaces[interface_name]["mtu"] = None
+                interfaces[interface_name]["speed"] = None
+                interfaces[interface_name]["last_flapped"] = -1.0
+
+                #if interface is not enabled then it's not up either
                 if is_enabled == False:  
                     interfaces[interface_name]["is_up"] = False
                     continue
 
-                #extract is_up operational status interface (line protocol)
-                m = re.match(is_up_regex, line)                 
-                if m:
-                    result = m.groups()                    
-                    is_up = bool("up" in result[0].strip())                    
-                    interfaces[interface_name]["is_up"] = is_up
-                    continue                
-
-
+                interfaces[interface_name]["is_up"] = bool("up" in interface_match.groups()[2])
+                continue          
             
-        
-        
-            # print(line)
-            # for pattern in (interface_regex_1, interface_regex_2,interface_regex_3):
-            #     interface_match = re.search(pattern, line)
-            #     if interface_match:
-            #         interface = interface_match.group(1)
-            #         status = interface_match.group(2)
-            #         print(interface)
-                    # print(status)
+            #we skip all lines associated to the Null interface (until we find another interface name)
+            if interface_name == "Null 0":
+                continue
+
+            descr_regex = r"^\s+Description:\s+(.+)"
+            descr_match = re.search(descr_regex, line)
+            if descr_match :                                
+                interfaces[interface_name]["description"] = descr_match.groups()[0].strip()
+                continue
+            
+            mac_addr_regex = r"^\s+Hardware.+address\s+is\s(.+),"
+            mac_addr_match = re.search(mac_addr_regex, line)
+            if mac_addr_match:                
+                interfaces[interface_name]["mac_address"] = mac_addr_match.groups()[0].upper()
+                continue                                
 
 
-                    # if "admin" in status.lower():
-                    #     is_enabled = False
-                    # else:
-                    #     is_enabled = True
-                    # if protocol:
-                    #     is_up = bool("up" in protocol)
-                    # else:
-                    #     is_up = bool("up" in status)
-                    # break
+            """
+            In OS6, MTU is shown as below in the command output:
+              "Encapsulation: Ethernet v2, IPv4 MTU 1500 bytes, IPv6 MTU 1500 bytes"
+            whereas for OS5 it will be like below:
+              "Encapsulation: Ethernet v2, MTU 1500 bytes"
+            """
+            mtu_regex = r"(?:IPv4)?\sMTU\s(\d+)\sbytes"            
+            mtu_match = re.search(mtu_regex,line)
+            if mtu_match:
+                interfaces[interface_name]["mtu"] = int(mtu_match.groups()[0])
+                continue
 
+            """
+            We have 3 possible type of output in the cli for the speed, e.g:
+              Line speed 1000000 kbps, bandwidth limit 500000 kbps
+              Line speed 1000000 kbps
+              Line speed unknown, bandwidth limit 50000 kbps
+            If a Bandwidth value is set it takes precedence over the line speed
+            """
+            speed_regex = r"^\s+Line\s+speed\s+(\d+|unknown)(?:.*bandwidth\s+limit\s+(\d+))?"
+            speed_match = re.search(speed_regex,line)
+            if speed_match:
+                if speed_match.groups()[1]: #if there is a bandwidth defined we use the bw value
+                    interfaces[interface_name]["speed"] = int(int(speed_match.groups()[1]) / 1000)
+                elif speed_match.groups()[0] != "unknown":
+                    interfaces[interface_name]["speed"] = int(int(speed_match.groups()[0]) / 1000)
+                continue
 
-
-
-            # #Extract IPv4 and prefix
-            # m = re.match(INTERNET_ADDRESS, line) 
-            # if m:
-            #     ip, prefix = m.groups()
-            #     ipv4.update({ip: {"prefix_length": int(prefix)}})
-            #     interfaces[interface_name] = {"ipv4": ipv4}
-            #     continue
-
-            # interface_regex_1 = r"^(\S+?)\s+is\s+(.+?),\s+line\s+protocol\s+is\s+(\S+)"
-            # interface_regex_2 = r"^(\S+)\s+is\s+(up|down)"
-            # interface_regex_3 = (
-            #     r"^(Control Plane Interface)"
-            #     r"\s+is\s+(.+?),\s+line\s+protocol\s+is\s+(\S+)"
-            # )
-            # for pattern in (interface_regex_1, interface_regex_2, interface_regex_3):
-            #     interface_match = re.search(pattern, line)
-            #     if interface_match:
-            #         interface = interface_match.group(1)
-            #         status = interface_match.group(2)
-            #         try:
-            #             protocol = interface_match.group(3)
-            #         except IndexError:
-            #             protocol = ""
-            #         if "admin" in status.lower():
-            #             is_enabled = False
-            #         else:
-            #             is_enabled = True
-            #         if protocol:
-            #             is_up = bool("up" in protocol)
-            #         else:
-            #             is_up = bool("up" in status)
-            #         break
-
-
-
+            """
+            Example of possible uptime/downtime output line:
+              Up-time 17d1h48m, status change count 3
+              Down-time 00:05:41, status change count 0    !when less than 24h
+            """
+            last_flapped_regex = r"^\s+(?:Up|Down)-time\s(.+),"
+            last_flapped_match = re.search(last_flapped_regex,line)
+            if last_flapped_match:
+                last_flapped_seconds = 0 
+                last_flapped = last_flapped_match.groups()[0]                
+                if 'd' in last_flapped: #format like DDdHHhMMm
+                    days = int(last_flapped.split('d')[0])
+                    hours = int(last_flapped.split('d')[1].split('h')[0])
+                    minutes = int(last_flapped.split('h')[1][:-1])
+                else: #format like HH:MM:SS
+                    t = last_flapped.split(':')
+                    days = 0
+                    hours = int(t[0])
+                    minutes = int(t[1])
+                    last_flapped_seconds += int(t[2])
+                                
+                last_flapped_seconds += days * 86400
+                last_flapped_seconds += hours * 3600
+                last_flapped_seconds += minutes * 60                                    
+                interfaces[interface_name]["last_flapped"] = last_flapped_seconds
+                continue 
 
         return interfaces
         
