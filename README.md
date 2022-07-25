@@ -33,7 +33,7 @@ On your device you can check your OneOS version with the command "show version"
 - :white_check_mark: cli()
 
 # Installation
-The driver is not yet integrated in napalm. 
+The driver is not yet integrated in the official napalm repository.
 To use it, simply copy the folder napalm-oneaccess-oneos/napalm_oneaccess_oneos
 into your Python package repository, in the same location where you can find the napalm folder, e.g:
 
