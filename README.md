@@ -33,6 +33,7 @@ On your device you can check your OneOS version with the command "show version"
 - :white_check_mark: cli()
 
 # Installation
+You can install the driver using pip: 
 ```
 pip install napalm-oneaccess-oneos
 ```
@@ -45,7 +46,7 @@ You can use this driver like this:
 from napalm import get_network_driver
 
 oneos_driver = get_network_driver("oneaccess_oneos")
-device = oneos_driver("192.168.2.1", "admin", "password",)
+device = oneos_driver("192.168.2.1", "admin", "password")
 device.open()
 print(device.get_facts())
 ```
