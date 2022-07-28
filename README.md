@@ -22,7 +22,6 @@ On your device you can check your OneOS version with the command "show version"
 
 
 # Supported functions
-
 - :white_check_mark: is_alive()
 - :white_check_mark: get_facts()
 - :white_check_mark: get_interfaces()
@@ -31,6 +30,8 @@ On your device you can check your OneOS version with the command "show version"
 - :white_check_mark: get_arp_table()
 - :white_check_mark: get_config()
 - :white_check_mark: cli()
+
+Functions definition can be found [here](https://napalm.readthedocs.io/en/latest/base.html)
 
 # Installation
 You can install the driver using pip: 
