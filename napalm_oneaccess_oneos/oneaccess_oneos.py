@@ -140,6 +140,7 @@ class OneaccessOneosDriver(NetworkDriver):
         """Wrapper for self.device.send.command().
         If command is a list will iterate through commands until valid command.
         """
+        print("\n#### ICI in oneaccess_oneos _send_command")
         try:
             if isinstance(command, list):
                 for cmd in command:
@@ -554,15 +555,19 @@ class OneaccessOneosDriver(NetworkDriver):
                 }
             ]
         """
+        print("\n#### ICI in oneaccess_oneos get_arp_table")
         if vrf:
             command = "show arp vrf {}".format(vrf)
         else:
             command = "show arp"
 
         arp_table = []
-        output = self._send_command(command)
+        output = self._send_command(command)       
         output = output.split("\n")
         output = output[1:] # Skip the first line which is a header      
+        print("\n#### ICI output in oneaccess_oneos get_arp_table")
+        print(output)
+        
 
         for line in output:                          
             arp_data = list(filter(None, line.split('  ')))             
