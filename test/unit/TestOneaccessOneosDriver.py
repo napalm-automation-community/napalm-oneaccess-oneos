@@ -25,11 +25,10 @@
 
 #     @classmethod
 #     def setUpClass(cls):
-#         print("\n#### In TestConfigOneaccessOneosDriver setup class#")
 #         """Run before starting the tests."""
 #         hostname = '127.0.0.1'
-#         username = 'vagrant'
-#         password = 'vagrant'
+#         username = 'admin'
+#         password = 'test'
 #         cls.vendor = 'oneaccess_oneos'
 
 #         optional_args = {'port': 12443, }

@@ -140,7 +140,6 @@ class OneaccessOneosDriver(NetworkDriver):
         """Wrapper for self.device.send.command().
         If command is a list will iterate through commands until valid command.
         """
-        print("\n#### ICI in oneaccess_oneos _send_command")
         try:
             if isinstance(command, list):
                 for cmd in command:
@@ -228,10 +227,18 @@ class OneaccessOneosDriver(NetworkDriver):
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
+            print("\n##### get_config")
+            print(self.oneos_gen)
             if self.oneos_gen == "OneOS6":
                 configs['running'] = output
             else:
-                #in OS5 there is 3 added info line displayed with the show run that we need to remove
+                #in OS5 there is 3 added info line displayed as per below example that we remove here:
+                """
+                Building configuration...
+
+                Current configuration:
+
+                """
                 configs['running'] = output[52:]
 
         if retrieve in ('startup', 'all'):
@@ -555,7 +562,6 @@ class OneaccessOneosDriver(NetworkDriver):
                 }
             ]
         """
-        print("\n#### ICI in oneaccess_oneos get_arp_table")
         if vrf:
             command = "show arp vrf {}".format(vrf)
         else:
@@ -565,9 +571,6 @@ class OneaccessOneosDriver(NetworkDriver):
         output = self._send_command(command)       
         output = output.split("\n")
         output = output[1:] # Skip the first line which is a header      
-        print("\n#### ICI output in oneaccess_oneos get_arp_table")
-        print(output)
-        
 
         for line in output:                          
             arp_data = list(filter(None, line.split('  ')))             

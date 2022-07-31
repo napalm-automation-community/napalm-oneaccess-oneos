@@ -5,8 +5,6 @@ interface gigabitethernet 0/0
  description to WAN
  ip address 172.16.30.141 255.255.255.0
  ip nat inside overload
- ip ospf authentication simple
- ip ospf authentication-key ekinops
 exit
 interface gigabitethernet 0/1
  description to RouterB
@@ -16,9 +14,6 @@ interface gigabitethernet 0/2
  description to routerC
  ip address 10.0.2.1 255.255.255.252
 exit
-interface loopback 1
- ip address 192.168.1.1 255.255.255.255
-exit
 router ospf
  network 10.0.1.0/28 area 0
  network 10.0.2.0/30 area 0
@@ -26,26 +21,6 @@ router ospf
  area 0
  exit
  area 1
- exit
-exit
-router bgp 200
- maximum-paths 2
- bgp router-id 192.168.1.1
- network 10.0.1.0/28
- network 10.0.2.0/30
- network 172.16.30.0/24
- network 192.168.1.1/32
- neighbor 10.0.1.2
-  remote-as 200
- exit
- neighbor 10.0.2.2
-  remote-as 200
- exit
- address-family ipv4
-  neighbor 10.0.1.2 activate
-  exit
-  neighbor 10.0.2.2 activate
-  exit
  exit
 exit
 exit
