@@ -27,8 +27,12 @@ def pytest_generate_tests(metafunc):
     
 
 
+
 class PatchedOneaccessOneosDriver(oneaccess_oneos.OneaccessOneosDriver):
-    """Patched OneaccessOneos Driver."""
+    """
+    Patched OneaccessOneos Driver which will simulate all the elements requiring I/O
+    
+    """
 
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):        
         """Patched OneaccessOneos Driver constructor."""
@@ -37,8 +41,17 @@ class PatchedOneaccessOneosDriver(oneaccess_oneos.OneaccessOneosDriver):
         self.patched_attrs = ['device']
         
         self.device = FakeOneaccessOneosDevice()
+        print(" CONSTRUCTOR CONSTRUCTOR")
         # self.oneos_gen = "OneOS6"
     
+    def select_os_from_testcase(self, test_case):
+        if "os6" in test_case: 
+            print("\n OS6")
+            self.oneos_gen = "OneOS6"
+        else:
+            print("\n OS5")
+            self.oneos_gen = "OneOS5"
+
     def close(self):
         pass
 
