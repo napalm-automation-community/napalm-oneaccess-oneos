@@ -4,8 +4,35 @@
      "description": "",
      "mac_address": "70:FC:8C:1C:96:7A",
      "mtu": 1500,
-     "speed": 100,
-     "last_flapped": 1659660.0,
+     "speed": 100.0,
+     "last_flapped": 1660980.0,
+     "is_up": true
+    },
+    "FastEthernet 1/0.5": {
+     "is_enabled": true,
+     "description": "Test description",
+     "mac_address": "70:FC:8C:1C:96:7A",
+     "mtu": 1500,
+     "speed": 80.0,
+     "last_flapped": 1660980.0,
+     "is_up": true
+    },
+    "Loopback 0": {
+     "is_enabled": true,
+     "description": "",
+     "mac_address": "",
+     "mtu": 32768,
+     "speed": -1.0,
+     "last_flapped": 1660980.0,
+     "is_up": true
+    },
+    "Loopback 1": {
+     "is_enabled": true,
+     "description": "TEST",
+     "mac_address": "",
+     "mtu": 1300,
+     "speed": 50.0,
+     "last_flapped": 1660980.0,
      "is_up": true
     }
    }

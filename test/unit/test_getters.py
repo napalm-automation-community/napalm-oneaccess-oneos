@@ -167,20 +167,9 @@ class TestGetter(BaseTestGetters):
         self.device.select_os_from_testcase(test_case)  
         #### 
         get_interfaces = self.device.get_interfaces()
-        print("ICI GET_INTERFACE_TEST")
-        print(get_interfaces)
-        print("END")
-        print(get_interfaces.items())
-        print("******************")
-        print(models.interface)
         assert len(get_interfaces) > 0
 
         for interface, interface_data in get_interfaces.items():
-            print("####### ICI in loop")
-            print(models.interface)
-            print("################")
-            print(interface_data)
-            print("####-------------")
             assert helpers.test_model(models.interface, interface_data)
 
         return get_interfaces

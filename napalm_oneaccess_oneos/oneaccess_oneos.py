@@ -330,7 +330,7 @@ class OneaccessOneosDriver(NetworkDriver):
          * is_enabled (True/False)
          * description (string)
          * last_flapped (float in seconds)
-         * speed (int in Mbit)
+         * speed (float in Mbit)
          * MTU (in Bytes)
          * mac_address (string)
         Example::
@@ -339,10 +339,10 @@ class OneaccessOneosDriver(NetworkDriver):
                         'description': 'WAN Interface',
                         'is_enabled': True,
                         'is_up': True,
-                        'last_flapped': 900,
+                        'last_flapped': 900.0,
                         'mac_address': '70:FC:8C:1C:96:7A',
                         'mtu': 1500,
-                        'speed': 100},
+                        'speed': 100.0},
         """
         interfaces = {}
 
@@ -368,7 +368,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 interfaces[interface_name]["description"] = ''
                 interfaces[interface_name]["mac_address"] = ''
                 interfaces[interface_name]["mtu"] = None
-                interfaces[interface_name]["speed"] = None
+                interfaces[interface_name]["speed"] = -1.0
                 interfaces[interface_name]["last_flapped"] = -1.0
 
                 #if interface is not enabled then it's not up either
@@ -419,9 +419,9 @@ class OneaccessOneosDriver(NetworkDriver):
             speed_match = re.search(speed_regex,line)
             if speed_match:
                 if speed_match.groups()[1]: #if there is a bandwidth defined we use the bw value
-                    interfaces[interface_name]["speed"] = int(int(speed_match.groups()[1]) / 1000)
+                    interfaces[interface_name]["speed"] = float(float(speed_match.groups()[1]) / 1000)
                 elif speed_match.groups()[0] != "unknown":
-                    interfaces[interface_name]["speed"] = int(int(speed_match.groups()[0]) / 1000)
+                    interfaces[interface_name]["speed"] = float(float(speed_match.groups()[0]) / 1000)
                 continue
 
             """

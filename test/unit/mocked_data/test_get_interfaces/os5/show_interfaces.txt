@@ -1,17 +1,80 @@
 FastEthernet 1/0 is up, line protocol is up
   Flags: (0x8063) BROADCAST MULTICAST ARP, interface index is 106
   Encapsulation: Ethernet v2, MTU 1500 bytes
-  Up-time 19d5h1m, status change count 1
+  Up-time 19d5h23m, status change count 1
   Hardware address is 70:fc:8c:1c:96:7a, ARP timeout 7200 sec
   Auto-negotiation, full-duplex, flowcontrol enabled
   Line speed 100000 kbps
   Media-type rj45
-  Mean input/output rate 2640/2720 bits/s, 2/3 packets/s (over the last 4 seconds)
-  Mean input/output load percentage 0.002/0.002 percent (over the last 4 seconds)
+  Mean input/output rate 3744/3912 bits/s, 4/4 packets/s (over the last 4 seconds)
+  Mean input/output load percentage 0.003/0.003 percent (over the last 4 seconds)
   Output queuing strategy: fifo, output queue length/depth 0/126
   Reliability: 255/255
-  IN:  867651 packets, 57739539 bytes, 0 queue drops
-       865271 broadcasts, 38 multicasts, 0 errors, 1 discards, 0 mac acl discards
-       1748 unknown protocols
-  OUT: 8014 packets, 707014 bytes, 0 queue drops
-       5420 broadcasts, 0 multicasts, 0 errors, 0 discards, 0 collisions
+  IN:  868356 packets, 57787806 bytes, 0 queue drops
+       865917 broadcasts, 38 multicasts, 0 errors, 1 discards, 0 mac acl discards
+       1749 unknown protocols
+  OUT: 8112 packets, 725288 bytes, 0 queue drops
+       5438 broadcasts, 0 multicasts, 0 errors, 0 discards, 0 collisions
+FastEthernet 1/0.5 is up, line protocol is up
+  Flags: (0x8063) BROADCAST MULTICAST ARP, interface index is 22017
+  Description: Test description
+  Encapsulation: 802.1Q Virtual LAN, VLAN ID 5, MTU 1500 bytes
+  Up-time 19d5h23m, status change count 1
+  Hardware address is 70:fc:8c:1c:96:7a, ARP timeout 7200 sec
+  Internet address is 172.16.30.210/24, broadcast address is 172.16.30.255
+  Line speed 100000 kbps, bandwidth limit 80000 kbps
+  Mean input/output rate 3744/3912 bits/s, 4/4 packets/s (over the last 4 seconds)
+  Mean input/output load percentage 0.003/0.004 percent (over the last 4 seconds)
+  Output queuing strategy: fifo+shaper, output queue length/depth 0/126
+  Shaper: packets dequeued 7230, burst(current/max) 999618/1000000
+  Reliability: 255/255
+  IN:  803943 packets, 51885897 bytes, 0 queue drops
+       801540 broadcasts, 2 multicasts, 0 errors, 0 discards, 0 mac acl discards
+       126 unknown protocols
+  OUT: 8116 packets, 726800 bytes, 0 queue drops
+       5438 broadcasts, 0 multicasts, 1 errors, 13 discards, 0 collisions
+Loopback 0 is up, line protocol is up
+  Flags: (0x80e9) LOOPBACK MULTICAST, interface index is 9902
+  MTU 32768 bytes
+  Up-time 19d5h23m, status change count 0
+  Internet address is 127.0.0.1/32
+  IPv6 address is ::1/128
+  IPv6 address is fe80::1/64
+  Line speed unknown
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Mean input/output load percentage 0.000/0.000 percent (over the last 4 seconds)
+  Output queuing strategy: fifo, output queue length/depth 0/126
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards, 0 mac acl discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+Loopback 1 is up, line protocol is up
+  Flags: (0x80e9) LOOPBACK MULTICAST, interface index is 9903
+  Firewall zone: management
+  Description: TEST
+  MTU 1300 bytes
+  Up-time 19d5h23m, status change count 0
+  Internet address is 172.24.26.249/32
+  Line speed unknown, bandwidth limit 50000 kbps
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Mean input/output load percentage 0.000/0.000 percent (over the last 4 seconds)
+  Output queuing strategy: fifo, output queue length/depth 0/126
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards, 0 mac acl discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
+Null 0 is up, line protocol is up
+  Flags: (0x80e1) MULTICAST, interface index is 9901
+  MTU 32768 bytes
+  Up-time 19d5h23m, status change count 0
+  Line speed unknown
+  Mean input/output rate 0/0 bits/s, 0/0 packets/s (over the last 4 seconds)
+  Mean input/output load percentage 0.000/0.000 percent (over the last 4 seconds)
+  Output queuing strategy: fifo, output queue length/depth 0/126
+  IN:  0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards, 0 mac acl discards
+       0 unknown protocols
+  OUT: 0 packets, 0 bytes, 0 queue drops
+       0 broadcasts, 0 multicasts, 0 errors, 0 discards
