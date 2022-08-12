@@ -38,18 +38,13 @@ class PatchedOneaccessOneosDriver(oneaccess_oneos.OneaccessOneosDriver):
         """Patched OneaccessOneos Driver constructor."""
         super().__init__(hostname, username, password, timeout, optional_args)
 
-        self.patched_attrs = ['device']
-        
-        self.device = FakeOneaccessOneosDevice()
-        print(" CONSTRUCTOR CONSTRUCTOR")
-        # self.oneos_gen = "OneOS6"
+        self.patched_attrs = ['device']        
+        self.device = FakeOneaccessOneosDevice()                
     
     def select_os_from_testcase(self, test_case):
         if "os6" in test_case: 
-            print("\n OS6")
             self.oneos_gen = "OneOS6"
         else:
-            print("\n OS5")
             self.oneos_gen = "OneOS5"
 
     def close(self):
@@ -78,6 +73,7 @@ class FakeOneaccessOneosDevice(BaseTestDouble):
         #we create the filename based on the command sent.
         # The spaces and the non-standard characters (like | ) are replaced by underscore _ in the filename
         filename = '{}.txt'.format(self.sanitize_text(command))
+
         #find_file will look for the file named as per the command in the folder test/unit/mocked_data/
         full_path = self.find_file(filename)
 

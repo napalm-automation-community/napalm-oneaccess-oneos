@@ -1,4 +1,3 @@
-One2515#show system cpu
 
 Core    Type     last sec  last min  last hour  last day  last 72 hours
  0     control      2.0 %     7.0 %      5.0 %     4.0 %      1.0 %

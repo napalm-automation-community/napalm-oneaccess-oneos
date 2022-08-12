@@ -1,4 +1,0 @@
-One2515#show system status | include "alarm level:"
-              CPU     normal   81.50 C (alarm level: 100.00 C)
-   board sensor 1     normal   45.25 C (alarm level:  80.00 C)
-One2515#

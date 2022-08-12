@@ -1,0 +1,17 @@
+FastEthernet 1/0 is up, line protocol is up
+  Flags: (0x8063) BROADCAST MULTICAST ARP, interface index is 106
+  Encapsulation: Ethernet v2, MTU 1500 bytes
+  Up-time 19d5h1m, status change count 1
+  Hardware address is 70:fc:8c:1c:96:7a, ARP timeout 7200 sec
+  Auto-negotiation, full-duplex, flowcontrol enabled
+  Line speed 100000 kbps
+  Media-type rj45
+  Mean input/output rate 2640/2720 bits/s, 2/3 packets/s (over the last 4 seconds)
+  Mean input/output load percentage 0.002/0.002 percent (over the last 4 seconds)
+  Output queuing strategy: fifo, output queue length/depth 0/126
+  Reliability: 255/255
+  IN:  867651 packets, 57739539 bytes, 0 queue drops
+       865271 broadcasts, 38 multicasts, 0 errors, 1 discards, 0 mac acl discards
+       1748 unknown protocols
+  OUT: 8014 packets, 707014 bytes, 0 queue drops
+       5420 broadcasts, 0 multicasts, 0 errors, 0 discards, 0 collisions

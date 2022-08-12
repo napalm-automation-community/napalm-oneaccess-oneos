@@ -1,4 +1,3 @@
-One420>show memory | begin Dynamic
 | :..Dynamic total      |  213 260  |         |
 | :  :       used       |   22 229  |  10.4%  |
 | :  :       free       |  191 031  |  89.5%  |

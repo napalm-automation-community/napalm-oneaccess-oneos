@@ -200,18 +200,6 @@ class OneaccessOneosDriver(NetworkDriver):
         return cli_output
 
 
-    def save_config(self):
-        """
-        ** Not a Napalm function **
-        Saves the config of the device, uses the paramiko save_config() function        
-        """
-        try:
-            output = self.device.save_config()
-            return True
-        except:
-            return False
-
-
     def get_config(self, retrieve='all',full=False, sanitized=False):
         """
         Return the configuration of a device.
@@ -227,8 +215,7 @@ class OneaccessOneosDriver(NetworkDriver):
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
-            print("\n##### get_config")
-            print(self.oneos_gen)
+
             if self.oneos_gen == "OneOS6":
                 configs['running'] = output
             else:
@@ -359,9 +346,9 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         interfaces = {}
 
-        command = "show interface"
+        command = "show interfaces"
         show_interface = self._send_command(command)
-        
+        print(show_interface)
         interfaces = {}
         for line in show_interface.splitlines():
 
@@ -461,7 +448,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 last_flapped_seconds += days * 86400
                 last_flapped_seconds += hours * 3600
                 last_flapped_seconds += minutes * 60                                    
-                interfaces[interface_name]["last_flapped"] = last_flapped_seconds
+                interfaces[interface_name]["last_flapped"] = float(last_flapped_seconds)
                 continue 
 
         return interfaces
@@ -568,7 +555,7 @@ class OneaccessOneosDriver(NetworkDriver):
             command = "show arp"
 
         arp_table = []
-        output = self._send_command(command)       
+        output = self._send_command(command)        
         output = output.split("\n")
         output = output[1:] # Skip the first line which is a header      
 
@@ -660,6 +647,7 @@ class OneaccessOneosDriver(NetworkDriver):
             ####### RAM Memory ########
             ram_info = self._send_command('show expert system ram-usage | include Mem')
             ram_info = ram_info.split()
+            print(ram_info)
             #convert Mb returned value to Kb
             environment["memory"]["available_ram"] = int(ram_info[6]) * 1000
             environment["memory"]["used_ram"] = int(ram_info[2]) * 1000
