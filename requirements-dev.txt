@@ -1,3 +1,4 @@
+napalm>=4.0.0
 coveralls
 ddt
 flake8-import-order

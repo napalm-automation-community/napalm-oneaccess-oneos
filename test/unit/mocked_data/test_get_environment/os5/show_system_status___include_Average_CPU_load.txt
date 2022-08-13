@@ -1,0 +1,1 @@
+Average CPU load (5 / 60 Minutes)         : 8.5% / 7.6%

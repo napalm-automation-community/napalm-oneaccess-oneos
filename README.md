@@ -66,3 +66,20 @@ device = oneos_driver("192.168.10.2", "admin", "password",optional_args=conn_arg
 device.open()
 print(device.get_interfaces_ip())
 ```
+
+# Tests
+You can execute the unit tests using Pytest:
+
+### Run all tests
+```
+pytest
+```
+
+### Run a specific test (example)
+```
+pytest -sk test_get_environment[os6]
+```
+Notes: Tests only supported with NAPALM >= 4.0.0
+
+# Contributing
+If you would like to contribute to this project please contact Robin Guillat (robin@guillat.com)

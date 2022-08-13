@@ -1,0 +1,22 @@
+HARDWARE DESCRIPTION
+
+  Device   : ONE2515
+  CPU      : Freescale T1040E (1.1) - Security Engine - 8-port Ethernet switch
+
+ Core Freq : 1400MHz  DDR Freq : 600MHz (1200 MT/s data rate)
+ Core Complex Bus Freq : 600MHz   Platform Freq : 600MHz
+ FMAN Freq : 600MHz   QMAN Freq : 300MHz
+ CPLD Index : 3   CPLD Version : F0
+ FPGA Index : 1B  FPGA Version : 0
+ Physical Ram size :   2GiB
+ Nand Flash size : 512MiB
+
+
+ Secure Boot protection : no
+
+
+ Local   : x Uplink :      ISDN :      Radio :      Usb :
+
+ Local   : 2 x GIGABIT ETHERNET + 2 x SFP ETHERNET + SWITCH ETHERNET / 8 ports
+ Dsp     : 4
+ PRI     : (5/0, 5/1, 5/2, 5/3)

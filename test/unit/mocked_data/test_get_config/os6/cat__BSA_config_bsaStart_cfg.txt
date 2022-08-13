@@ -1,0 +1,26 @@
+hostname RouterA
+ip ssh enable
+ip ssh timeout 999999
+interface gigabitethernet 0/0
+ description to WAN
+ ip address 172.16.30.141 255.255.255.0
+ ip nat inside overload
+exit
+interface gigabitethernet 0/1
+ description to RouterB
+ ip address 10.0.1.1 255.255.255.240
+exit
+interface gigabitethernet 0/2
+ description to routerC
+ ip address 10.0.2.1 255.255.255.252
+exit
+router ospf
+ network 10.0.1.0/28 area 0
+ network 10.0.2.0/30 area 0
+ network 172.16.30.0/24 area 1
+ area 0
+ exit
+ area 1
+ exit
+exit
+exit

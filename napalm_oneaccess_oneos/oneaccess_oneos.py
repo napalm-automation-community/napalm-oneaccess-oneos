@@ -174,7 +174,7 @@ class OneaccessOneosDriver(NetworkDriver):
         return {"is_alive": self.device.is_alive()}
 
 
-    def cli(self, commands):
+    def cli(self, commands,encoding ="text"):
         """
         Execute a list of commands and return the output in a dictionary format using the command
         as the key.
@@ -200,18 +200,6 @@ class OneaccessOneosDriver(NetworkDriver):
         return cli_output
 
 
-    def save_config(self):
-        """
-        ** Not a Napalm function **
-        Saves the config of the device, uses the paramiko save_config() function        
-        """
-        try:
-            output = self.device.save_config()
-            return True
-        except:
-            return False
-
-
     def get_config(self, retrieve='all',full=False, sanitized=False):
         """
         Return the configuration of a device.
@@ -227,10 +215,17 @@ class OneaccessOneosDriver(NetworkDriver):
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
+
             if self.oneos_gen == "OneOS6":
                 configs['running'] = output
             else:
-                #in OS5 there is 3 added info line displayed with the show run that we need to remove
+                #in OS5 there is 3 added info line displayed as per below example that we remove here:
+                """
+                Building configuration...
+
+                Current configuration:
+
+                """
                 configs['running'] = output[52:]
 
         if retrieve in ('startup', 'all'):
@@ -251,14 +246,14 @@ class OneaccessOneosDriver(NetworkDriver):
         credit @mwallraf 
         """
         # Initialize to zero
-        (days, hours, minutes, seconds) = (0, 0, 0, 0)
+        (days, hours, minutes, seconds) = (0, 0, 0, 0)        
 
-        m = re.match(".*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)
+        m = re.match(r"\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)        
         if m:
             days = int(m.groupdict()["days"])
             hours = int(m.groupdict()["hours"])
             minutes = int(m.groupdict()["minutes"])
-            seconds = int(m.groupdict()["seconds"])
+            seconds = int(m.groupdict()["seconds"])        
 
         uptime_sec = (days * DAY_SECONDS) + (hours * HOUR_SECONDS) \
                       + (minutes * 60) + seconds
@@ -272,8 +267,8 @@ class OneaccessOneosDriver(NetworkDriver):
             "vendor": "Ekinops OneAccess",
             "uptime": None,  #converted in seconds
             "os_version": None,
-            "os_generation": self.oneos_gen,
-            "boot_version": None,
+            "os_generation": self.oneos_gen,   #addition oneaccess driver
+            "boot_version": None,              #addition oneaccess driver
             "serial_number": None,
             "model": None,
             "hostname": None,
@@ -281,11 +276,11 @@ class OneaccessOneosDriver(NetworkDriver):
             "interface_list": []
         }
 
-        # get output from device
+        # get output from device, works for both OS5 and OS6
         show_system_status = self._send_command('show system status')
         show_system_hardware = self._send_command('show system hardware')
         show_hostname = self._send_command('hostname')
-        show_ip_int_brief = self._send_command('show ip int brief')                           
+        show_ip_int_brief = self._send_command('show ip interface brief')           
 
         for l in show_system_status.splitlines():
             if "System Information" in l:
@@ -304,7 +299,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 continue
 
         for l in show_system_hardware.splitlines():
-            m = re.match(".*Device\s*:\s+(?P<MODEL>\S+).*", l)
+            m = re.match(r".*Device\s*:\s+(?P<MODEL>\S+).*", l)
             if m:
                 facts["model"] = m.groupdict()["MODEL"]
                 break
@@ -335,7 +330,7 @@ class OneaccessOneosDriver(NetworkDriver):
          * is_enabled (True/False)
          * description (string)
          * last_flapped (float in seconds)
-         * speed (int in Mbit)
+         * speed (float in Mbit)
          * MTU (in Bytes)
          * mac_address (string)
         Example::
@@ -344,14 +339,14 @@ class OneaccessOneosDriver(NetworkDriver):
                         'description': 'WAN Interface',
                         'is_enabled': True,
                         'is_up': True,
-                        'last_flapped': 900,
+                        'last_flapped': 900.0,
                         'mac_address': '70:FC:8C:1C:96:7A',
                         'mtu': 1500,
-                        'speed': 100},
+                        'speed': 100.0},
         """
         interfaces = {}
 
-        command = "show interface"
+        command = "show interfaces"
         show_interface = self._send_command(command)
         
         interfaces = {}
@@ -373,7 +368,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 interfaces[interface_name]["description"] = ''
                 interfaces[interface_name]["mac_address"] = ''
                 interfaces[interface_name]["mtu"] = None
-                interfaces[interface_name]["speed"] = None
+                interfaces[interface_name]["speed"] = -1.0
                 interfaces[interface_name]["last_flapped"] = -1.0
 
                 #if interface is not enabled then it's not up either
@@ -424,9 +419,9 @@ class OneaccessOneosDriver(NetworkDriver):
             speed_match = re.search(speed_regex,line)
             if speed_match:
                 if speed_match.groups()[1]: #if there is a bandwidth defined we use the bw value
-                    interfaces[interface_name]["speed"] = int(int(speed_match.groups()[1]) / 1000)
+                    interfaces[interface_name]["speed"] = float(float(speed_match.groups()[1]) / 1000)
                 elif speed_match.groups()[0] != "unknown":
-                    interfaces[interface_name]["speed"] = int(int(speed_match.groups()[0]) / 1000)
+                    interfaces[interface_name]["speed"] = float(float(speed_match.groups()[0]) / 1000)
                 continue
 
             """
@@ -453,7 +448,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 last_flapped_seconds += days * 86400
                 last_flapped_seconds += hours * 3600
                 last_flapped_seconds += minutes * 60                                    
-                interfaces[interface_name]["last_flapped"] = last_flapped_seconds
+                interfaces[interface_name]["last_flapped"] = float(last_flapped_seconds)
                 continue 
 
         return interfaces
@@ -487,7 +482,7 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         interfaces = {}
 
-        command = "show interface"
+        command = "show interfaces"
         show_ip_interface = self._send_command(command)
 
         INTERNET_ADDRESS = r"\s+(?:Internet address is|Secondary address is)"
@@ -560,7 +555,7 @@ class OneaccessOneosDriver(NetworkDriver):
             command = "show arp"
 
         arp_table = []
-        output = self._send_command(command)
+        output = self._send_command(command)        
         output = output.split("\n")
         output = output[1:] # Skip the first line which is a header      
 
@@ -652,6 +647,7 @@ class OneaccessOneosDriver(NetworkDriver):
             ####### RAM Memory ########
             ram_info = self._send_command('show expert system ram-usage | include Mem')
             ram_info = ram_info.split()
+            
             #convert Mb returned value to Kb
             environment["memory"]["available_ram"] = int(ram_info[6]) * 1000
             environment["memory"]["used_ram"] = int(ram_info[2]) * 1000
@@ -670,7 +666,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 for temp_line in temperatures:
     
                     sensor_name = temp_line.strip().split("  ")[0]
-                    temp_line = re.findall('\d+\.\d. C', temp_line)                    
+                    temp_line = re.findall(r"\d+\.\d. C", temp_line)                    
                     if not temp_line: #exit loop if not a valid temp line
                         continue   
                     current_temp = float(temp_line[0].replace('C',''))
@@ -689,7 +685,7 @@ class OneaccessOneosDriver(NetworkDriver):
             """FYI, you get an output like this (only 1 core shown, and for 5min average stats):
             Average CPU load (5 / 60 Minutes)         : 8.2% / 7.5%
             """            
-            cpu_status = re.findall('\d*.\d*%', cpu_status)[0].replace('%','')
+            cpu_status = re.findall(r"\d*.\d*%", cpu_status)[0].replace('%','')
             environment["cpu"][0] = {}
             environment["cpu"][0]["%usage"] = float(cpu_status)            
             

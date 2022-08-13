@@ -1,54 +1,123 @@
 """Tests for getters."""
 
 from napalm.base.test.getters import BaseTestGetters
-
-
+from napalm.base.test.getters import wrap_test_cases 
+from napalm.base.test.getters import models
+from napalm.base.test.getters import helpers
 import pytest
 
+from napalm.base.test import conftest
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 
-"""
-Tests component KO at the moment, 
-couldn't understand how the test-framework is to be used.
+#we use a cusom Facts dict for OneOs to support custom values additions
+oneos_facts_model = TypedDict(
+    "facts",
+    {
+        "os_version": str,
+        "os_generation":str,    #custom oneos
+        "boot_version":str,     #custom oneos
+        "uptime": int,
+        "interface_list": list,
+        "vendor": str,
+        "serial_number": str,
+        "model": str,
+        "hostname": str,
+        "fqdn": str,
+    },
+)
 
-When running pytest we get a netmiko error. It seems the test tries to connect to
-a device at 127.0.0.1.
 
-"""
 
 @pytest.mark.usefixtures("set_device_parameters")
 class TestGetter(BaseTestGetters):
     """Test get_* methods."""
-    NAPALM_TEST_MOCK = 1
-        
-    def test_is_alive(self, test_case):
-        """Test is_alive method."""
-        alive = self.device.is_alive()
-        assert helpers.test_model(models.alive, alive)
-        return alive
+
+    """    
+    ------- Notes OneOS Driver:    
+    for each test-case having an OS5 variant, copy the original test function from the base 
+    and add following line at the beginning of the function:
+        self.device.select_os_from_testcase(test_case) 
+
+    This is very ugly and not flexible if the original base method change.
+    A better way would be to insert this select_os_from_testcase to all inherited method 
+    automatically but I couldn't find a way to do it.
+    (I loose access to some variables if I try to decorate the method here)
+
+    This limitation makes the testing uncompatible with NAPALM < 4.0.0 due to a change
+    in the models class and definition
+    ---------------------------------------------------------------------------
+    """
+
+    @pytest.mark.skip(reason="Not supported")
+    def test_get_config_filtered(self, test_case):
+        pass
+
+    @pytest.mark.skip(reason="Not supported")
+    def test_get_config_sanitized(self, test_case):
+        pass
 
 
-    # def test_get_facts(self, test_case):
-    #     """Test get_facts method."""
-    #     print(os.getenv("NAPALM_TEST_MOCK"))
-    #     facts = self.device.get_facts()
-    #     assert helpers.test_model(models.facts, facts)
-        # assert True
-        # return facts
+    @wrap_test_cases
+    def test_get_environment(self, test_case):
+        """Test get_environment."""
 
-    # def test_get_interfaces_ip(self, test_case):
-    #     """Test get_interfaces_ip."""
-    #     assert True
-        # get_interfaces_ip = self.device.get_interfaces_ip()
-        # assert len(get_interfaces_ip) > 0
+        ####set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)  
+        #### 
 
-        # for interface, interface_details in get_interfaces_ip.items():
-        #     ipv4 = interface_details.get("ipv4", {})
-        #     ipv6 = interface_details.get("ipv6", {})
-        #     for ip, ip_details in ipv4.items():
-        #         assert helpers.test_model(models.interfaces_ip, ip_details)
-        #     for ip, ip_details in ipv6.items():
-        #         assert helpers.test_model(models.interfaces_ip, ip_details)
+        environment = self.device.get_environment()
+        assert len(environment) > 0
+
+        for fan, fan_data in environment["fans"].items():
+            assert helpers.test_model(models.FanDict, fan_data)
+
+        for power, power_data in environment["power"].items():
+            assert helpers.test_model(models.PowerDict, power_data)
+
+        for temperature, temperature_data in environment["temperature"].items():
+            assert helpers.test_model(models.TemperatureDict, temperature_data)
+
+        for cpu, cpu_data in environment["cpu"].items():
+            assert helpers.test_model(models.CPUDict, cpu_data)
+
+        assert helpers.test_model(models.MemoryDict, environment["memory"])
+
+        return environment
+
     
-        # return get_interfaces_ip
+
+    @wrap_test_cases
+    def test_get_facts(self, test_case):
+        """Test get_facts method."""
+
+        ####set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)  
+        #### 
+
+        facts = self.device.get_facts()
         
+        #we compare to our custom OneOs Fact model
+        assert helpers.test_model(oneos_facts_model, facts)
+        return facts
+
+
+
+    @wrap_test_cases
+    def test_get_interfaces(self, test_case):
+        """Test get_interfaces."""
+
+        ####set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)  
+        #### 
+        get_interfaces = self.device.get_interfaces()
+        assert len(get_interfaces) > 0
+
+        for interface, interface_data in get_interfaces.items():
+            assert helpers.test_model(models.InterfaceDict, interface_data)
+
+        return get_interfaces
