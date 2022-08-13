@@ -1,12 +1,13 @@
 """Tests for getters."""
 
-from napalm.base.test.getters import BaseTestGetters
-from napalm.base.test.getters import wrap_test_cases 
-from napalm.base.test.getters import models
-from napalm.base.test.getters import helpers
-import pytest
 
-from napalm.base.test import conftest
+
+from napalm.base.test.getters import BaseTestGetters
+from napalm.base.test.getters import helpers
+from napalm.base.test.getters import models
+from napalm.base.test.getters import wrap_test_cases
+
+import pytest
 
 try:
     from typing import TypedDict
@@ -14,13 +15,13 @@ except ImportError:
     from typing_extensions import TypedDict
 
 
-#we use a cusom Facts dict for OneOs to support custom values additions
+# we use a cusom Facts dict for OneOs to support custom values additions
 oneos_facts_model = TypedDict(
     "facts",
     {
         "os_version": str,
-        "os_generation":str,    #custom oneos
-        "boot_version":str,     #custom oneos
+        "os_generation": str,    # custom oneos
+        "boot_version": str,     # custom oneos
         "uptime": int,
         "interface_list": list,
         "vendor": str,
@@ -37,14 +38,14 @@ oneos_facts_model = TypedDict(
 class TestGetter(BaseTestGetters):
     """Test get_* methods."""
 
-    """    
-    ------- Notes OneOS Driver:    
-    for each test-case having an OS5 variant, copy the original test function from the base 
+    """
+    ------- Notes OneOS Driver:
+    for each test-case having an OS5 variant, copy the original test function from the base
     and add following line at the beginning of the function:
-        self.device.select_os_from_testcase(test_case) 
+        self.device.select_os_from_testcase(test_case)
 
     This is very ugly and not flexible if the original base method change.
-    A better way would be to insert this select_os_from_testcase to all inherited method 
+    A better way would be to insert this select_os_from_testcase to all inherited method
     automatically but I couldn't find a way to do it.
     (I loose access to some variables if I try to decorate the method here)
 
@@ -65,9 +66,9 @@ class TestGetter(BaseTestGetters):
     def test_get_config(self, test_case):
         """Test get_config method."""
 
-        ####set the OneOs version matching the test_case name
-        self.device.select_os_from_testcase(test_case)  
-        #### 
+        # set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)
+        # ---------
 
         get_config = self.device.get_config()
 
@@ -81,9 +82,9 @@ class TestGetter(BaseTestGetters):
     def test_get_environment(self, test_case):
         """Test get_environment."""
 
-        ####set the OneOs version matching the test_case name
-        self.device.select_os_from_testcase(test_case)  
-        #### 
+        # set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)
+        # ---------
 
         environment = self.device.get_environment()
         assert len(environment) > 0
@@ -104,19 +105,19 @@ class TestGetter(BaseTestGetters):
 
         return environment
 
-    
+
 
     @wrap_test_cases
     def test_get_facts(self, test_case):
         """Test get_facts method."""
 
-        ####set the OneOs version matching the test_case name
-        self.device.select_os_from_testcase(test_case)  
-        #### 
+        # set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)
+        # ---------
 
         facts = self.device.get_facts()
-        
-        #we compare to our custom OneOs Fact model
+
+        # we compare to our custom OneOs Fact model
         assert helpers.test_model(oneos_facts_model, facts)
         return facts
 
@@ -126,9 +127,9 @@ class TestGetter(BaseTestGetters):
     def test_get_interfaces(self, test_case):
         """Test get_interfaces."""
 
-        ####set the OneOs version matching the test_case name
-        self.device.select_os_from_testcase(test_case)  
-        #### 
+        # set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)
+        # ---------
         get_interfaces = self.device.get_interfaces()
         assert len(get_interfaces) > 0
 

@@ -19,20 +19,11 @@ Napalm driver for Oneaccess_oneos.
 Read https://napalm.readthedocs.io for more information.
 """
 
-import telnetlib
-import netmiko
-from napalm.base import NetworkDriver
-import napalm.base.helpers
-from napalm.base.exceptions import (
-    ConnectionException,
-    SessionLockedException,
-    MergeConfigException,
-    ReplaceConfigException,
-    CommandErrorException,
-)
-
-from napalm.base.netmiko_helpers import netmiko_args
 import re
+
+from napalm.base import NetworkDriver
+from napalm.base.netmiko_helpers import netmiko_args
+
 
 # Easier to store these as constants
 HOUR_SECONDS = 3600
@@ -59,11 +50,8 @@ OneOS5 and OneOS6 behavior difference observed:
 """
 
 
-
-
 class OneaccessOneosDriver(NetworkDriver):
     """Napalm driver for Oneaccess_oneos."""
-
 
     def __init__(self, hostname, username, password, timeout=60, optional_args=None):
         """
@@ -72,30 +60,30 @@ class OneaccessOneosDriver(NetworkDriver):
         :param hostname: The IP address or hostname of the device you want to connect to
         :param username: The username to use to login to the router
         :param password: The password to use for authentication
-        :param timeout: The amount of time to wait for the device to respond to a command, defaults to 60
+        :param timeout: The amount of time to wait for the device to respond to a command,
+                        defaults to 60
         (optional)
-        :param optional_args: 
+        :param optional_args:
         """
-      
         self.device = None
         self.hostname = hostname
         self.username = username
         self.password = password
         self.timeout = timeout
-        self.oneos_gen = None  #OneOs generation OneOS5 or OneOS6
+        self.oneos_gen = None  # OneOs generation OneOS5 or OneOS6
         self.prompt_os6 = None
 
         if optional_args is None:
             optional_args = {}
 
-        self.netmiko_optional_args = netmiko_args(optional_args)    
+        self.netmiko_optional_args = netmiko_args(optional_args)
 
-        self.transport = optional_args.get("transport", "ssh")        
+        self.transport = optional_args.get("transport", "ssh")
         # Set the default port if not set
         default_port = {"ssh": 22, "telnet": 23}
         self.netmiko_optional_args.setdefault("port", default_port[self.transport])
 
-        #not sure if really needed
+        # not sure if really needed
         if self.transport == "telnet":
             # Telnet only supports inline_transfer
             self.inline_transfer = True
@@ -109,26 +97,26 @@ class OneaccessOneosDriver(NetworkDriver):
             device_type = 'oneaccess_oneos_telnet'
 
         self.device = self._netmiko_open(device_type, netmiko_optional_args=self.netmiko_optional_args)
-                
-        """ 
-        We extract the prompt of the device based on the hostname so that we can remove it from 
+
+        """
+        We extract the prompt of the device based on the hostname so that we can remove it from
         the output of the send_command if it appears (only for some commands on os6 with SSH we have an
         extra line returned in the cli output)
         Note we use the parent send_command() here and not _send_command()
-        """    
-        self.prompt_os6 = re.findall('.+[^#]', self.device.send_command('hostname'))[0].replace('\n','') 
-        self.prompt_os6 += "#"        
-        
-        #We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it              
-        version = self._send_command("show version | include version")        
+        """
+        self.prompt_os6 = re.findall('.+[^#]', self.device.send_command('hostname'))[0].replace('\n', '')
+        self.prompt_os6 += "#"
+
+        # We find out what is the device generation (OneOS6 or OneOS5) as somme cmds depends of it
+        version = self._send_command("show version | include version")
         if "-6." in version:
             self.oneos_gen = "OneOS6"
         elif "-V5." in version:
-           self.oneos_gen =  "OneOS5"
+            self.oneos_gen = "OneOS5"
         else:
-            self.oneos_gen = "Unknown" #OS generation version Unknown
+            self.oneos_gen = "Unknown"  # OS generation version Unknown
 
-        #disable show output pagination as it can causes issues for some commands in the send_command
+        # disable show output pagination as it can causes issues for some commands in the send_command
         self._send_command("term len 0")
 
     def close(self):
@@ -148,21 +136,20 @@ class OneaccessOneosDriver(NetworkDriver):
                         break
             else:
                 output = self.device.send_command(command)
-            
-            output_lines= output.splitlines()
-            if output_lines and  output_lines[-1] == self.prompt_os6:                
+
+            output_lines = output.splitlines()
+            if output_lines and output_lines[-1] == self.prompt_os6:
                 output = output[:- len(self.prompt_os6)]
 
             return self._send_command_postprocess(output)
-        except (socket.error, EOFError) as e:
-            raise ConnectionClosedException(str(e))
- 
+        except RuntimeError as e:  # don't think this exception is correct, to be fixed.
+            raise "Error in _send_command() caught: " + str(e)
+
 
 
     @staticmethod
-    def _send_command_postprocess(output):        
+    def _send_command_postprocess(output):
         output = output.strip()
-        
 
         return output
 
@@ -170,11 +157,11 @@ class OneaccessOneosDriver(NetworkDriver):
     def is_alive(self):
         """Returns a flag with the state of the connection."""
         if self.device is None:
-            return {"is_alive": False}        
+            return {"is_alive": False}
         return {"is_alive": self.device.is_alive()}
 
 
-    def cli(self, commands,encoding ="text"):
+    def cli(self, commands, encoding="text"):
         """
         Execute a list of commands and return the output in a dictionary format using the command
         as the key.
@@ -191,8 +178,8 @@ class OneaccessOneosDriver(NetworkDriver):
 
         for command in commands:
             output = self._send_command(command)
-            #OneOS error message if the command is not valid
-            if ('Syntax error' or 'syntax error') in output:  
+            # OneOS error message if the command is not valid
+            if ('Syntax error' or 'syntax error') in output:
                 raise ValueError('Unable to execute command "{}"'.format(command))
             cli_output.setdefault(command, {})
             cli_output[command] = output
@@ -200,7 +187,7 @@ class OneaccessOneosDriver(NetworkDriver):
         return cli_output
 
 
-    def get_config(self, retrieve='all',full=False, sanitized=False):
+    def get_config(self, retrieve='all', full=False, sanitized=False):
         """
         Return the configuration of a device.
         Args:
@@ -210,17 +197,17 @@ class OneaccessOneosDriver(NetworkDriver):
         full(bool): NOT IMPLEMENTED, concept not present on OneAccess
         sanitized(bool): NOT IMPLEMENTED (but could be done), Remove secret data. Default: ``False``.
         """
-        configs = {'startup': '','running': '','candidate': ''}
+        configs = {'startup': '', 'running': '', 'candidate': ''}
 
         if retrieve in ('running', 'all'):
-            command = [ 'show running-config' ]
+            command = ['show running-config']
             output = self._send_command(command)
 
-            
+
             if self.oneos_gen == "OneOS6":
                 configs['running'] = output
             else:
-                #in OS5 there is 3 added info line displayed as per below example that we remove here:
+                # in OS5 there is 3 added info line displayed as per below example that we remove here:
                 """
                 Building configuration...
 
@@ -230,11 +217,11 @@ class OneaccessOneosDriver(NetworkDriver):
                 configs['running'] = output[52:]
 
         if retrieve in ('startup', 'all'):
-            #method working for both OneOS5 and OneOs6
-            command = [ 'cat /BSA/config/bsaStart.cfg' ] 
+            # method working for both OneOS5 and OneOs6
+            command = ['cat /BSA/config/bsaStart.cfg']
             output = self._send_command(command)
             configs['startup'] = output
-                
+
         return configs
 
 
@@ -244,32 +231,32 @@ class OneaccessOneosDriver(NetworkDriver):
         Extract the uptime string from the given OneAccess.
         Return the uptime in seconds as an integer
 
-        credit @mwallraf 
+        credit @mwallraf
         """
         # Initialize to zero
-        (days, hours, minutes, seconds) = (0, 0, 0, 0)        
+        (days, hours, minutes, seconds) = (0, 0, 0, 0)
 
-        m = re.match(r"\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)        
+        m = re.match(r"\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)
         if m:
             days = int(m.groupdict()["days"])
             hours = int(m.groupdict()["hours"])
             minutes = int(m.groupdict()["minutes"])
-            seconds = int(m.groupdict()["seconds"])        
+            seconds = int(m.groupdict()["seconds"])
 
         uptime_sec = (days * DAY_SECONDS) + (hours * HOUR_SECONDS) \
-                      + (minutes * 60) + seconds
+            + (minutes * 60) + seconds
 
         return uptime_sec
 
     def get_facts(self):
-        """Return a set of facts from the device.        
-        """        
+        """Return a set of facts from the device.
+        """
         facts = {
             "vendor": "Ekinops OneAccess",
-            "uptime": None,  #converted in seconds
+            "uptime": None,  # converted in seconds
             "os_version": None,
-            "os_generation": self.oneos_gen,   #addition oneaccess driver
-            "boot_version": None,              #addition oneaccess driver
+            "os_generation": self.oneos_gen,   # addition oneaccess driver
+            "boot_version": None,              # addition oneaccess driver
             "serial_number": None,
             "model": None,
             "hostname": None,
@@ -281,42 +268,42 @@ class OneaccessOneosDriver(NetworkDriver):
         show_system_status = self._send_command('show system status')
         show_system_hardware = self._send_command('show system hardware')
         show_hostname = self._send_command('hostname')
-        show_ip_int_brief = self._send_command('show ip interface brief')           
+        show_ip_int_brief = self._send_command('show ip interface brief')
 
-        for l in show_system_status.splitlines():
-            if "System Information" in l:
-                c = l.split()
+        for line_status in show_system_status.splitlines():
+            if "System Information" in line_status:
+                c = line_status.split()
                 facts["serial_number"] = c[-1]
                 continue
-            if "Software version" in l:
-                facts["os_version"] = l.split()[-1]
+            if "Software version" in line_status:
+                facts["os_version"] = line_status.split()[-1]
                 continue
-            if "Boot version" in l:
-                facts["boot_version"] = l.split()[-1]
+            if "Boot version" in line_status:
+                facts["boot_version"] = line_status.split()[-1]
                 continue
-            if "Sys Up time" in l: 
-                uptime_str = l.split(":")[-1]
+            if "Sys Up time" in line_status:
+                uptime_str = line_status.split(":")[-1]
                 facts["uptime"] = self.parse_uptime(uptime_str)
                 continue
 
-        for l in show_system_hardware.splitlines():
-            m = re.match(r".*Device\s*:\s+(?P<MODEL>\S+).*", l)
+        for line_hw in show_system_hardware.splitlines():
+            m = re.match(r".*Device\s*:\s+(?P<MODEL>\S+).*", line_hw)
             if m:
                 facts["model"] = m.groupdict()["MODEL"]
                 break
-        
-        for l in show_hostname.splitlines():
-            if l:
-                facts["hostname"] = l.strip()
+
+        for line_hostname in show_hostname.splitlines():
+            if line_hostname:
+                facts["hostname"] = line_hostname.strip()
                 break
-                
+
         for line in show_ip_int_brief.splitlines()[1:-1]:
             interface = line.split("  ")[0]
             if interface != "Null 0":
-                facts["interface_list"].append(interface)                            
+                facts["interface_list"].append(interface)
 
-        #No local FQDN to retrieve on a OneAccess device
-        facts["fqdn"] = "" 
+        # No local FQDN to retrieve on a OneAccess device
+        facts["fqdn"] = ""
 
         return facts
 
@@ -349,52 +336,52 @@ class OneaccessOneosDriver(NetworkDriver):
 
         command = "show interfaces"
         show_interface = self._send_command(command)
-        
+
         interfaces = {}
         for line in show_interface.splitlines():
 
-            #Extract Interface name, is_enabled and is_up status
-            interface_regex = r"^(.*?)\sis\s(up|down).+line\s+protocol\s+is\s(up|down)" 
-            interface_match = re.match(interface_regex, line) 
-            if interface_match:                
+            # Extract Interface name, is_enabled and is_up status
+            interface_regex = r"^(.*?)\sis\s(up|down).+line\s+protocol\s+is\s(up|down)"
+            interface_match = re.match(interface_regex, line)
+            if interface_match:
                 interface_name = interface_match.groups()[0]
-                if interface_name == "Null 0": #internal null interface not relevant
+                if interface_name == "Null 0":  # internal null interface not relevant
                     continue
 
                 is_enabled = bool("up" in interface_match.groups()[1])
                 interfaces[interface_name] = {}
                 interfaces[interface_name]["is_enabled"] = is_enabled
 
-                #create all the keys associated to the interface with empty values
+                # create all the keys associated to the interface with empty values
                 interfaces[interface_name]["description"] = ''
                 interfaces[interface_name]["mac_address"] = ''
                 interfaces[interface_name]["mtu"] = None
                 interfaces[interface_name]["speed"] = -1.0
                 interfaces[interface_name]["last_flapped"] = -1.0
 
-                #if interface is not enabled then it's not up either
-                if is_enabled == False:  
+                # if interface is not enabled then it's not up either
+                if is_enabled is False:
                     interfaces[interface_name]["is_up"] = False
                     continue
 
                 interfaces[interface_name]["is_up"] = bool("up" in interface_match.groups()[2])
-                continue          
-            
-            #we skip all lines associated to the Null interface (until we find another interface name)
+                continue
+
+            # we skip all lines associated to the Null interface (until we find another interface name)
             if interface_name == "Null 0":
                 continue
 
             descr_regex = r"^\s+Description:\s+(.+)"
             descr_match = re.search(descr_regex, line)
-            if descr_match :                                
+            if descr_match:
                 interfaces[interface_name]["description"] = descr_match.groups()[0].strip()
                 continue
-            
+
             mac_addr_regex = r"^\s+Hardware.+address\s+is\s(.+),"
             mac_addr_match = re.search(mac_addr_regex, line)
-            if mac_addr_match:                
+            if mac_addr_match:
                 interfaces[interface_name]["mac_address"] = mac_addr_match.groups()[0].upper()
-                continue                                
+                continue
 
 
             """
@@ -403,8 +390,8 @@ class OneaccessOneosDriver(NetworkDriver):
             whereas for OS5 it will be like below:
               "Encapsulation: Ethernet v2, MTU 1500 bytes"
             """
-            mtu_regex = r"(?:IPv4)?\sMTU\s(\d+)\sbytes"            
-            mtu_match = re.search(mtu_regex,line)
+            mtu_regex = r"(?:IPv4)?\sMTU\s(\d+)\sbytes"
+            mtu_match = re.search(mtu_regex, line)
             if mtu_match:
                 interfaces[interface_name]["mtu"] = int(mtu_match.groups()[0])
                 continue
@@ -417,9 +404,9 @@ class OneaccessOneosDriver(NetworkDriver):
             If a Bandwidth value is set it takes precedence over the line speed
             """
             speed_regex = r"^\s+Line\s+speed\s+(\d+|unknown)(?:.*bandwidth\s+limit\s+(\d+))?"
-            speed_match = re.search(speed_regex,line)
+            speed_match = re.search(speed_regex, line)
             if speed_match:
-                if speed_match.groups()[1]: #if there is a bandwidth defined we use the bw value
+                if speed_match.groups()[1]:  # if there is a bandwidth defined we use the bw value
                     interfaces[interface_name]["speed"] = float(float(speed_match.groups()[1]) / 1000)
                 elif speed_match.groups()[0] != "unknown":
                     interfaces[interface_name]["speed"] = float(float(speed_match.groups()[0]) / 1000)
@@ -431,29 +418,29 @@ class OneaccessOneosDriver(NetworkDriver):
               Down-time 00:05:41, status change count 0    !when less than 24h
             """
             last_flapped_regex = r"^\s+(?:Up|Down)-time\s(.+),"
-            last_flapped_match = re.search(last_flapped_regex,line)
+            last_flapped_match = re.search(last_flapped_regex, line)
             if last_flapped_match:
-                last_flapped_seconds = 0 
-                last_flapped = last_flapped_match.groups()[0]                
-                if 'd' in last_flapped: #format like DDdHHhMMm
+                last_flapped_seconds = 0
+                last_flapped = last_flapped_match.groups()[0]
+                if 'd' in last_flapped:  # format like DDdHHhMMm
                     days = int(last_flapped.split('d')[0])
                     hours = int(last_flapped.split('d')[1].split('h')[0])
                     minutes = int(last_flapped.split('h')[1][:-1])
-                else: #format like HH:MM:SS
+                else:  # format like HH:MM:SS
                     t = last_flapped.split(':')
                     days = 0
                     hours = int(t[0])
                     minutes = int(t[1])
                     last_flapped_seconds += int(t[2])
-                                
+
                 last_flapped_seconds += days * 86400
                 last_flapped_seconds += hours * 3600
-                last_flapped_seconds += minutes * 60                                    
+                last_flapped_seconds += minutes * 60
                 interfaces[interface_name]["last_flapped"] = float(last_flapped_seconds)
-                continue 
+                continue
 
         return interfaces
-        
+
 
 
 
@@ -496,27 +483,27 @@ class OneaccessOneosDriver(NetworkDriver):
         for line in show_ip_interface.splitlines():
             if len(line.strip()) == 0:
                 continue
-            if line[0] != " ": #Extract interface name
+            if line[0] != " ":  # Extract interface name
                 ipv4 = {}
                 ipv6 = {}
                 interface_name = line.split(" is ")[0]
                 continue
 
-            #Extract IPv4 and prefix
-            m = re.match(INTERNET_ADDRESS, line) 
+            # Extract IPv4 and prefix
+            m = re.match(INTERNET_ADDRESS, line)
             if m:
                 ip, prefix = m.groups()
                 ipv4.update({ip: {"prefix_length": int(prefix)}})
                 interfaces[interface_name] = {"ipv4": ipv4}
                 continue
 
-            #Extract IPv6 and prefix
-            m = re.match(IPV6_ADDR, line)                       
-            if m:                
-                ip, prefix = m.groups()                
+            # Extract IPv6 and prefix
+            m = re.match(IPV6_ADDR, line)
+            if m:
+                ip, prefix = m.groups()
                 ipv6.update({ip: {"prefix_length": int(prefix)}})
                 interfaces[interface_name] = {"ipv6": ipv6}
-                
+
         return interfaces
 
     def get_arp_table(self, vrf=""):
@@ -528,7 +515,7 @@ class OneaccessOneosDriver(NetworkDriver):
             * ip (string)
             * age (float)  -  ** Not specified in the base driver, so I assumed converted in second here **
 
-        'vrf' of null-string will default to the non-vrf default domain. 
+        'vrf' of null-string will default to the non-vrf default domain.
 
         In all cases the same data structure is returned and no reference to the VRF that was used
         is included in the output.
@@ -556,24 +543,24 @@ class OneaccessOneosDriver(NetworkDriver):
             command = "show arp"
 
         arp_table = []
-        output = self._send_command(command)        
+        output = self._send_command(command)
         output = output.split("\n")
-        output = output[1:] # Skip the first line which is a header      
+        output = output[1:]  # Skip the first line which is a header
 
-        for line in output:                          
-            arp_data = list(filter(None, line.split('  ')))             
+        for line in output:
+            arp_data = list(filter(None, line.split('  ')))
             """for reference, here how our arp_data list will be like this:
             # dynamic: ['172.16.30.1', ' 6a:fc:8c:25:56:53', '01:59:06', ' GigabitEthernet 1/0.5', 'ARPA ']
             # static OS6: ['99.1.1.2', '70:fc:8c:16:99:92', '-']  (no interface and no age)
             # static OS5: ['99.1.1.1', '70:fc:8c:16:99:99', '-', 'Bvi 5', 'ARPA']
             """
-            if len(line) == 0 or len(arp_data) < 3:                 
-                continue   #skip lines which are not arp data
+            if len(line) == 0 or len(arp_data) < 3:
+                continue   # skip lines which are not arp data
 
-            #If no timeout/age, set it to -1
-            if arp_data[2] == "-": 
+            # If no timeout/age, set it to -1
+            if arp_data[2] == "-":
                 age_sec = -1.0
-            else: #convert hh:mm:ss to seconds
+            else:  # convert hh:mm:ss to seconds
                 fields = arp_data[2].split(":")
                 if len(fields) == 3:
                     try:
@@ -582,9 +569,9 @@ class OneaccessOneosDriver(NetworkDriver):
                         age_sec = 3600 * hours + 60 * minutes + seconds
                     except ValueError:
                         age_sec = -1.0
-                            
+
             if len(arp_data) < 4:
-                 interface = '' #if no interface retrieve, set to empty string
+                interface = ''  # if no interface retrieve, set to empty string
             else:
                 interface = arp_data[3]
 
@@ -611,9 +598,9 @@ class OneaccessOneosDriver(NetworkDriver):
                  * is_critical (True/False) - True if the temp is above the critical threshold
                 Data only available for some OneOS6 Hardware
             * power
-                 ** Not implemented ** 
+                 ** Not implemented **
             * cpu is a dictionary of dictionaries where the key is the ID and the values
-                 * %usage  - In OS6 the average for the last 1min is retrieve wheread for OS5 is 
+                 * %usage  - In OS6 the average for the last 1min is retrieve wheread for OS5 is
                              for the last 5min
                  e.g. {'cpu': {'0': {'%usage': 9.0},'1': {'%usage': 1.0}},
             * memory is a dictionary with:
@@ -621,10 +608,10 @@ class OneaccessOneosDriver(NetworkDriver):
                  * used_ram (int) - RAM in Kbytes in use in the device
         """
 
-        environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}, "memory":{}}
+        environment = {"fans": {}, "temperature": {}, "power": {}, "cpu": {}, "memory": {}}
 
         if self.oneos_gen == "OneOS6":
-            ####### CPU stats ########
+            # ###### CPU stats ########
             cpu_status = self._send_command('show system cpu')
             """
             FYI, you get an output like this on OS6 with this command:
@@ -634,67 +621,67 @@ class OneaccessOneosDriver(NetworkDriver):
             0     control      6.0 %    14.0 %      6.0 %     4.0 %      2.0 %
             1  forwarding      1.0 %     1.0 %      1.0 %     0.0 %      0.0 %
             One2515#
-            """ 
+            """
             cpu_status = cpu_status.splitlines()[1:]
-            for cpu in cpu_status: #for each cores (can be several)                
-                cpu = cpu.split()                
-                if(len(cpu)) < 3: #exit loop if not a valid cpu line
+            for cpu in cpu_status:  # for each cores (can be several)
+                cpu = cpu.split()
+                if (len(cpu)) < 3:  # exit loop if not a valid cpu line
                     continue
 
                 environment["cpu"][int(cpu[0])] = {}
-                #Extract the CPU usage at 1min
+                # Extract the CPU usage at 1min
                 environment["cpu"][int(cpu[0])]["%usage"] = float(cpu[4])
 
-            ####### RAM Memory ########
+            # ###### RAM Memory ########
             ram_info = self._send_command('show expert system ram-usage | include Mem')
             ram_info = ram_info.split()
-            
-            #convert Mb returned value to Kb
+
+            # convert Mb returned value to Kb
             environment["memory"]["available_ram"] = int(ram_info[6]) * 1000
             environment["memory"]["used_ram"] = int(ram_info[2]) * 1000
 
 
-            ####### Temperatures ########            
+            # ###### Temperatures ########
             temperatures = self._send_command('show system status | include "alarm level:"')
             """ Output example;
             One2515#show system status | include "alarm level:
               CPU     normal   86.25 C (alarm level: 100.00 C)
               board sensor 1     normal   49.75 C (alarm level:  80.00 C)
             """
-            #Only a some hardware have Temperatures values available
+            # Only a some hardware have Temperatures values available
             if temperatures:
                 temperatures = temperatures.splitlines()
                 for temp_line in temperatures:
-    
-                    sensor_name = temp_line.strip().split("  ")[0]
-                    temp_line = re.findall(r"\d+\.\d. C", temp_line)                    
-                    if not temp_line: #exit loop if not a valid temp line
-                        continue   
-                    current_temp = float(temp_line[0].replace('C',''))
-                    temp_alert = float(temp_line[1].replace('C',''))
 
-                    # #Let's considere a critical temperature as 10% above the alarm threshold
-                    temp_critical = round(temp_alert * 1.1 , 2)
-                    environment["temperature"][sensor_name] ={}
+                    sensor_name = temp_line.strip().split("  ")[0]
+                    temp_line = re.findall(r"\d+\.\d. C", temp_line)
+                    if not temp_line:  # exit loop if not a valid temp line
+                        continue
+                    current_temp = float(temp_line[0].replace('C', ''))
+                    temp_alert = float(temp_line[1].replace('C', ''))
+
+                    # Let's considere a critical temperature as 10% above the alarm threshold
+                    temp_critical = round(temp_alert * 1.1, 2)
+                    environment["temperature"][sensor_name] = {}
                     environment["temperature"][sensor_name]["temperature"] = current_temp
-                    environment["temperature"][sensor_name]["is_alert"] = current_temp >= temp_alert       
+                    environment["temperature"][sensor_name]["is_alert"] = current_temp >= temp_alert
                     environment["temperature"][sensor_name]["is_critical"] = current_temp >= temp_critical
 
-        else: #OneOS5
-            ####### CPU stats ########
+        else:  # OneOS5
+            # ###### CPU stats ########
             cpu_status = self._send_command('show system status | include Average CPU load')
             """FYI, you get an output like this (only 1 core shown, and for 5min average stats):
             Average CPU load (5 / 60 Minutes)         : 8.2% / 7.5%
-            """            
-            cpu_status = re.findall(r"\d*.\d*%", cpu_status)[0].replace('%','')
+            """
+            cpu_status = re.findall(r"\d*.\d*%", cpu_status)[0].replace('%', '')
             environment["cpu"][0] = {}
-            environment["cpu"][0]["%usage"] = float(cpu_status)            
-            
-            ####### RAM Memory ########
+            environment["cpu"][0]["%usage"] = float(cpu_status)
+
+            # ###### RAM Memory ########
             ram_info = self._send_command('show memory | begin Dynamic').splitlines()[1:3]
-            environment["memory"]["used_ram"] = int(ram_info[0].split('|')[2].replace(' ',''))
-            environment["memory"]["available_ram"] = int(ram_info[1].split('|')[2].replace(' ',''))
-            
-            ####### no temperature data implemented for OS5 ########
+            environment["memory"]["used_ram"] = int(ram_info[0].split('|')[2].replace(' ', ''))
+            environment["memory"]["available_ram"] = int(ram_info[1].split('|')[2].replace(' ', ''))
+
+            # ###### no temperature data implemented for OS5 ########
 
         return environment

@@ -1,6 +1,6 @@
 """setup.py file."""
 
-import uuid
+# import uuid
 
 from setuptools import setup, find_packages
 
@@ -26,4 +26,3 @@ setup(
     include_package_data=True,
     install_requires=reqs,
 )
-   
