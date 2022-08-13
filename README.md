@@ -1,5 +1,6 @@
 # napalm-oneaccess-oneos
 
+[![PyPi version](https://badgen.net/pypi/v/pip/)](https://pypi.org/project/napalm-oneaccess-oneos/)
 [![Python Tests](https://github.com/napalm-automation-community/napalm-oneaccess-oneos/actions/workflows/python-app.yml/badge.svg)](https://github.com/napalm-automation-community/napalm-oneaccess-oneos/actions/workflows/python-app.yml)
 
 ## NAPALM
