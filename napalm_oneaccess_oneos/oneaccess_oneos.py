@@ -174,7 +174,7 @@ class OneaccessOneosDriver(NetworkDriver):
         return {"is_alive": self.device.is_alive()}
 
 
-    def cli(self, commands):
+    def cli(self, commands,encoding ="text"):
         """
         Execute a list of commands and return the output in a dictionary format using the command
         as the key.
@@ -248,7 +248,7 @@ class OneaccessOneosDriver(NetworkDriver):
         # Initialize to zero
         (days, hours, minutes, seconds) = (0, 0, 0, 0)        
 
-        m = re.match("\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)        
+        m = re.match(r"\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)        
         if m:
             days = int(m.groupdict()["days"])
             hours = int(m.groupdict()["hours"])
@@ -278,21 +278,9 @@ class OneaccessOneosDriver(NetworkDriver):
 
         # get output from device, works for both OS5 and OS6
         show_system_status = self._send_command('show system status')
-        print("-----------------")
-        print(show_system_status)
-        print("-----------------")
         show_system_hardware = self._send_command('show system hardware')
-        print("-----------------")
-        print(show_system_hardware)
-        print("-----------------")
         show_hostname = self._send_command('hostname')
-        print("-----------------")
-        print(show_hostname)
-        print("-----------------")
-        show_ip_int_brief = self._send_command('show ip interface brief')
-        print("-----------------")         
-        print(show_ip_int_brief)
-        print("-----------------")                
+        show_ip_int_brief = self._send_command('show ip interface brief')           
 
         for l in show_system_status.splitlines():
             if "System Information" in l:
@@ -311,7 +299,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 continue
 
         for l in show_system_hardware.splitlines():
-            m = re.match(".*Device\s*:\s+(?P<MODEL>\S+).*", l)
+            m = re.match(r".*Device\s*:\s+(?P<MODEL>\S+).*", l)
             if m:
                 facts["model"] = m.groupdict()["MODEL"]
                 break
@@ -494,7 +482,7 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         interfaces = {}
 
-        command = "show interface"
+        command = "show interfaces"
         show_ip_interface = self._send_command(command)
 
         INTERNET_ADDRESS = r"\s+(?:Internet address is|Secondary address is)"
@@ -678,7 +666,7 @@ class OneaccessOneosDriver(NetworkDriver):
                 for temp_line in temperatures:
     
                     sensor_name = temp_line.strip().split("  ")[0]
-                    temp_line = re.findall('\d+\.\d. C', temp_line)                    
+                    temp_line = re.findall(r"\d+\.\d. C", temp_line)                    
                     if not temp_line: #exit loop if not a valid temp line
                         continue   
                     current_temp = float(temp_line[0].replace('C',''))
@@ -697,7 +685,7 @@ class OneaccessOneosDriver(NetworkDriver):
             """FYI, you get an output like this (only 1 core shown, and for 5min average stats):
             Average CPU load (5 / 60 Minutes)         : 8.2% / 7.5%
             """            
-            cpu_status = re.findall('\d*.\d*%', cpu_status)[0].replace('%','')
+            cpu_status = re.findall(r"\d*.\d*%", cpu_status)[0].replace('%','')
             environment["cpu"][0] = {}
             environment["cpu"][0]["%usage"] = float(cpu_status)            
             

@@ -11,14 +11,13 @@ with open("requirements.txt", "r") as fs:
 
 setup(
     name="napalm-oneaccess-oneos",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
     author="Robin Guillat",
     author_email="robin@guillat.com",
-    description="NAPALM driver for OneAccess devices over Telnet or SSH",
+    description="NAPALM driver for Ekinops OneAccess devices over Telnet or SSH",
     classifiers=[
-        'Topic :: Utilities',
-         'Programming Language :: Python',
+        'Topic :: Utilities',         
          'Programming Language :: Python :: 3',
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS',

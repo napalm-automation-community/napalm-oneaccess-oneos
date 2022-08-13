@@ -2,11 +2,9 @@
 
 from napalm.base.test.getters import BaseTestGetters
 from napalm.base.test.getters import wrap_test_cases 
-from napalm.base.test import models
-from napalm.base.test import helpers
+from napalm.base.test.getters import models
+from napalm.base.test.getters import helpers
 import pytest
-import functools
-import json
 
 from napalm.base.test import conftest
 
@@ -16,12 +14,13 @@ except ImportError:
     from typing_extensions import TypedDict
 
 
+#we use a cusom Facts dict for OneOs to support custom values additions
 oneos_facts_model = TypedDict(
     "facts",
     {
         "os_version": str,
-        "os_generation":str,
-        "boot_version":str,
+        "os_generation":str,    #custom oneos
+        "boot_version":str,     #custom oneos
         "uptime": int,
         "interface_list": list,
         "vendor": str,
@@ -39,37 +38,19 @@ class TestGetter(BaseTestGetters):
     """Test get_* methods."""
 
     """    
-    TLDR ---------------------------------------------------------------------- 
+    ------- Notes OneOS Driver:    
     for each test-case having an OS5 variant, copy the original test function from the base 
     and add following line at the beginning of the function:
         self.device.select_os_from_testcase(test_case) 
 
-    (explanation why below)
+    This is very ugly and not flexible if the original base method change.
+    A better way would be to insert this select_os_from_testcase to all inherited method 
+    automatically but I couldn't find a way to do it.
+    (I loose access to some variables if I try to decorate the method here)
+
+    This limitation makes the testing uncompatible with NAPALM < 4.0.0 due to a change
+    in the models class and definition
     ---------------------------------------------------------------------------
-
-    Here to manage the different scenario between OneOS5 and OneOS6 (different output for some functions)
-    we have named all the test cases with a name prefixed by "os5" or "os6"
-    Then based on the test-case name we will changet he OneOsDriver object variable oneos_gen to 
-    OneOS5 or OneOS6 via the method "select_os_from_testcase()" defined in the patchedOneOsDriver
-    
-    To do this we would ideally directly run the "select_os_from_testcase()" function at the beginning
-    of each inherited napalm getter test functions. 
-    An elegant way would be to do as per following example:
-        # @wrap_test_cases
-        # def test_get_config(self, test_case):
-        #     self.device.select_os_from_testcase(test_case)  
-        #     return super().test_get_config(test_case)
-    But here this type of method doesn't work.
-    When calling the test method like this the mocked_file data for the result comparaison is not 
-    properly loaded (full file path is not properly generated)
-    Some data seems to be getting lost in the operation.
-
-    As a result since i am not able to use the inheritance
-    the only way I found to make it work is to copy paste the full getters function
-    from the base/test/getters napalm module file (very ugly)
-
-    So here all method are just copy paste from the BaseTestGetters with just the adition of
-    "select_os_from_testcase()" call at the beginning
     """
 
     @pytest.mark.skip(reason="Not supported")
@@ -93,18 +74,18 @@ class TestGetter(BaseTestGetters):
         assert len(environment) > 0
 
         for fan, fan_data in environment["fans"].items():
-            assert helpers.test_model(models.fan, fan_data)
+            assert helpers.test_model(models.FanDict, fan_data)
 
         for power, power_data in environment["power"].items():
-            assert helpers.test_model(models.power, power_data)
+            assert helpers.test_model(models.PowerDict, power_data)
 
         for temperature, temperature_data in environment["temperature"].items():
-            assert helpers.test_model(models.temperature, temperature_data)
+            assert helpers.test_model(models.TemperatureDict, temperature_data)
 
         for cpu, cpu_data in environment["cpu"].items():
-            assert helpers.test_model(models.cpu, cpu_data)
+            assert helpers.test_model(models.CPUDict, cpu_data)
 
-        assert helpers.test_model(models.memory, environment["memory"])
+        assert helpers.test_model(models.MemoryDict, environment["memory"])
 
         return environment
 
@@ -137,6 +118,6 @@ class TestGetter(BaseTestGetters):
         assert len(get_interfaces) > 0
 
         for interface, interface_data in get_interfaces.items():
-            assert helpers.test_model(models.interface, interface_data)
+            assert helpers.test_model(models.InterfaceDict, interface_data)
 
         return get_interfaces
