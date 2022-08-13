@@ -54,7 +54,7 @@ device.open()
 print(device.get_facts())
 ```
 
-If you want to custom some connection parameter, for example the transport protocol or the port connected to the device, you should use `optional_args`, it is exactly the same as `netmiko.
+If you want to custom some connection parameter, for example the transport protocol or the port connected to the device, you should use the `optional_args` argument (its attributes derivate from netmiko)
 
 ```python
 from napalm import get_network_driver
