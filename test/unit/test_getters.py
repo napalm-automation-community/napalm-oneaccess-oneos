@@ -61,6 +61,21 @@ class TestGetter(BaseTestGetters):
     def test_get_config_sanitized(self, test_case):
         pass
 
+    @wrap_test_cases
+    def test_get_config(self, test_case):
+        """Test get_config method."""
+
+        ####set the OneOs version matching the test_case name
+        self.device.select_os_from_testcase(test_case)  
+        #### 
+
+        get_config = self.device.get_config()
+
+        assert isinstance(get_config, dict)
+        assert helpers.test_model(models.ConfigDict, get_config)
+
+        return get_config
+
 
     @wrap_test_cases
     def test_get_environment(self, test_case):
