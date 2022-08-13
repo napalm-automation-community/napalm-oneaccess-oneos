@@ -1,5 +1,7 @@
 # napalm-oneaccess-oneos
 
+[![Python Tests](https://github.com/napalm-automation-community/napalm-oneaccess-oneos/actions/workflows/python-app.yml/badge.svg)](https://github.com/napalm-automation-community/napalm-oneaccess-oneos/actions/workflows/python-app.yml)
+
 ## NAPALM
 
 [NAPALM](https://napalm.readthedocs.io/en/latest/) (Network Automation and Programmability Abstraction Layer with Multivendor support) is a Python library that implements a set of functions to interact with different router vendor devices using a unified API.
