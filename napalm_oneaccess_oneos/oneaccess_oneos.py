@@ -212,10 +212,13 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         configs = {'startup': '','running': '','candidate': ''}
 
+        print("/n")
+        print("******ONEOS:" +  self.oneos_gen)
         if retrieve in ('running', 'all'):
             command = [ 'show running-config' ]
             output = self._send_command(command)
 
+            
             if self.oneos_gen == "OneOS6":
                 configs['running'] = output
             else:
@@ -233,7 +236,8 @@ class OneaccessOneosDriver(NetworkDriver):
             command = [ 'cat /BSA/config/bsaStart.cfg' ] 
             output = self._send_command(command)
             configs['startup'] = output
-
+        
+        print(configs)
         return configs
 
 
