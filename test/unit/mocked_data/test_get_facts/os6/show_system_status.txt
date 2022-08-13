@@ -1,0 +1,25 @@
+System Information for device ONE2515 S/N T2117008159002061
+
+Software version    : OneOS-pCPE-PPC_pi2-6.7.4
+Software created on : 2022-02-28 13:04:37
+Boot version        : BOOT-PPC_hw2-2.1.3
+Boot created on     : 2019-02-04 10:44:12
+Recovery version    : OneOs-RCY-PPC_pi2-1.3.7
+Recovery created on : 2020-02-10 09:34:31
+
+Current system time : 2022-08-13 10:50:41+1000
+System started      : 2022-07-24 16:48:52+1000
+Start caused by     : Software requested / Administrator requested delayed reboot
+Sys Up time         : 19d 18h 1m 49s
+PSU                 : normal
+Fans                : back fan defect      - front fan defect      - 2 defect(s)  last on 2022-07-24 06:49:07
+
+Temperatures:
+              CPU     normal   81.25 C (alarm level: 100.00 C)
+   board sensor 1     normal   44.75 C (alarm level:  80.00 C)
+
+Core    Type     last sec  last min  last hour  last day  last 72 hours
+ 0     control     39.0 %     7.0 %      6.0 %     4.0 %      4.0 %
+ 1  forwarding      1.0 %     1.0 %      1.0 %     1.0 %      1.0 %
+ 2  forwarding      1.0 %     0.0 %      0.0 %     0.0 %      0.0 %
+ 3  forwarding      1.0 %     1.0 %      1.0 %     1.0 %      1.0 %

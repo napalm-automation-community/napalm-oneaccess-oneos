@@ -39,7 +39,10 @@ class PatchedOneaccessOneosDriver(oneaccess_oneos.OneaccessOneosDriver):
         super().__init__(hostname, username, password, timeout, optional_args)
 
         self.patched_attrs = ['device']        
-        self.device = FakeOneaccessOneosDevice()                
+        self.device = FakeOneaccessOneosDevice()
+        
+        #initialise with Os6 as default but value will change depending of the test case name                
+        self.oneos_gen = "OneOS6"  
     
     def select_os_from_testcase(self, test_case):
         if "os6" in test_case: 

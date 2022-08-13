@@ -246,14 +246,14 @@ class OneaccessOneosDriver(NetworkDriver):
         credit @mwallraf 
         """
         # Initialize to zero
-        (days, hours, minutes, seconds) = (0, 0, 0, 0)
+        (days, hours, minutes, seconds) = (0, 0, 0, 0)        
 
-        m = re.match(".*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)
+        m = re.match("\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)        
         if m:
             days = int(m.groupdict()["days"])
             hours = int(m.groupdict()["hours"])
             minutes = int(m.groupdict()["minutes"])
-            seconds = int(m.groupdict()["seconds"])
+            seconds = int(m.groupdict()["seconds"])        
 
         uptime_sec = (days * DAY_SECONDS) + (hours * HOUR_SECONDS) \
                       + (minutes * 60) + seconds
@@ -267,8 +267,8 @@ class OneaccessOneosDriver(NetworkDriver):
             "vendor": "Ekinops OneAccess",
             "uptime": None,  #converted in seconds
             "os_version": None,
-            "os_generation": self.oneos_gen,
-            "boot_version": None,
+            "os_generation": self.oneos_gen,   #addition oneaccess driver
+            "boot_version": None,              #addition oneaccess driver
             "serial_number": None,
             "model": None,
             "hostname": None,
@@ -276,11 +276,23 @@ class OneaccessOneosDriver(NetworkDriver):
             "interface_list": []
         }
 
-        # get output from device
+        # get output from device, works for both OS5 and OS6
         show_system_status = self._send_command('show system status')
+        print("-----------------")
+        print(show_system_status)
+        print("-----------------")
         show_system_hardware = self._send_command('show system hardware')
+        print("-----------------")
+        print(show_system_hardware)
+        print("-----------------")
         show_hostname = self._send_command('hostname')
-        show_ip_int_brief = self._send_command('show ip int brief')                           
+        print("-----------------")
+        print(show_hostname)
+        print("-----------------")
+        show_ip_int_brief = self._send_command('show ip interface brief')
+        print("-----------------")         
+        print(show_ip_int_brief)
+        print("-----------------")                
 
         for l in show_system_status.splitlines():
             if "System Information" in l:
@@ -348,7 +360,7 @@ class OneaccessOneosDriver(NetworkDriver):
 
         command = "show interfaces"
         show_interface = self._send_command(command)
-        print(show_interface)
+        
         interfaces = {}
         for line in show_interface.splitlines():
 
@@ -647,7 +659,7 @@ class OneaccessOneosDriver(NetworkDriver):
             ####### RAM Memory ########
             ram_info = self._send_command('show expert system ram-usage | include Mem')
             ram_info = ram_info.split()
-            print(ram_info)
+            
             #convert Mb returned value to Kb
             environment["memory"]["available_ram"] = int(ram_info[6]) * 1000
             environment["memory"]["used_ram"] = int(ram_info[2]) * 1000
