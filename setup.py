@@ -16,11 +16,15 @@ setup(
     author="Robin Guillat",
     author_email="robin@guillat.com",
     description="NAPALM driver for Ekinops OneAccess devices over Telnet or SSH",
+    long_description="NAPALM driver for Ekinops OneAccess devices" 
+            "Connection to the device is done through a SSH or telnet connection using the netmiko librairy.",    
     classifiers=[
-        'Topic :: Utilities',         
-         'Programming Language :: Python :: 3',
+        'Topic :: Utilities',
+        "Topic :: System :: Networking",
+        'Programming Language :: Python :: 3',
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS',
+        "Operating System :: Microsoft :: Windows"
     ],
     url="https://github.com/napalm-automation/napalm-oneaccess_oneos",
     include_package_data=True,
