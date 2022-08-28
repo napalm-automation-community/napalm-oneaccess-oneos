@@ -20,9 +20,13 @@ Read https://napalm.readthedocs.io for more information.
 """
 
 import re
+from typing import Dict
 
 from napalm.base import NetworkDriver
+from napalm.base import models
 from napalm.base.netmiko_helpers import netmiko_args
+
+
 
 
 # Easier to store these as constants
@@ -279,7 +283,6 @@ class OneaccessOneosDriver(NetworkDriver):
             if "Sys Up time" in line_status:
                 uptime_str = line_status.split(":")[-1]
                 facts["uptime"] = self.parse_uptime(uptime_str)
-                print(facts["uptime"])
                 continue
 
         for line_hw in show_system_hardware.splitlines():
@@ -681,3 +684,79 @@ class OneaccessOneosDriver(NetworkDriver):
             # ###### no temperature data implemented for OS5 ########
 
         return environment
+
+
+    def get_users(self) -> Dict[str, models.UsersDict]:
+        """
+        Returns a dictionary with the configured users.
+        The keys of the main dictionary represents the username. The values represent the details
+        of the user, represented by the following keys:
+
+            * level (int)
+            * password (str)
+            * sshkeys (list)   ### NOT SUPPORTED in OneAccess
+
+        The level is an integer between 0 and 15, where 0 is the lowest access and 15 represents
+        full access to the device.
+
+        In OneAccess the password hashs are generated with a random SALT value.
+        The passwords are stored in the file /password as per below example:
+        9496e639c29d09b473b601644f94a941$0acd45bc016f1fb4aa12018824ee45cd
+        The part before the $ is the password hash and the part after the $ is the salt
+
+        Example::
+            {
+                'admin': {
+                    'level': 15,
+                    'password': '9496e639c29d09b473b601644f94a941$0acd45bc016f1fb4aa12018824ee45cd',
+                    'sshkeys': []
+                }
+            }
+        """
+        users = {}
+
+        users_list = self._send_command('cat /password')
+
+        """
+        OneOS6 devices will not have a /passsword file for the two following scenarios:
+        1- only the default admin/admin user is present
+        2- The users are saved in the running config instead of in the file
+        """
+        if "No such file or directory" in users_list:
+            show_username = self._send_command('show run username')
+            if "% No entries found." in show_username:  # default admin/admin password
+                users['admin'] = {
+                    'level': 15,
+                    'password': "9496e639c29d09b473b601644f94a941$0acd45bc016f1fb4aa12018824ee45cd",
+                    'sshkeys': []
+                }
+            else:
+                for user_line in show_username.splitlines():
+                    user_info = user_line.split(' ')
+                    if len(user_info) < 5:  # ignore empty lines
+                        continue
+
+                    # priviledge level can be set as its int value or by one of the three priviledge name
+                    if len(user_info[4]) <= 2:
+                        level = int(user_info[4])
+                    elif user_info[4] == "administrator":
+                        level = 15
+                    elif user_info[4] == "manager":
+                        level = 7
+                    elif user_info[4] == "user":
+                        level = 0
+
+                    password = user_info[3]
+                    # If the password is encrypted, we add the SALT hash to our data
+                    if len(user_info) > 5:
+                        password += '$' + user_info[9]
+
+                    users[user_info[1]] = {
+                        'level': level,
+                        'password': password,
+                        'sshkeys': []  # not supported
+                    }
+        else:
+            # TO DO : Read users from password file
+            pass
+        return users
