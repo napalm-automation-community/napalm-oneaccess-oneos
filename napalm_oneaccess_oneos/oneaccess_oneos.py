@@ -229,7 +229,7 @@ class OneaccessOneosDriver(NetworkDriver):
     def parse_uptime(uptime_str):
         """
         Extract the uptime string from the given OneAccess.
-        Return the uptime in seconds as an integer
+        Return the uptime in seconds as a float
 
         credit @mwallraf
         """
@@ -238,10 +238,10 @@ class OneaccessOneosDriver(NetworkDriver):
 
         m = re.match(r"\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)
         if m:
-            days = int(m.groupdict()["days"])
-            hours = int(m.groupdict()["hours"])
-            minutes = int(m.groupdict()["minutes"])
-            seconds = int(m.groupdict()["seconds"])
+            days = float(m.groupdict()["days"])
+            hours = float(m.groupdict()["hours"])
+            minutes = float(m.groupdict()["minutes"])
+            seconds = float(m.groupdict()["seconds"])
 
         uptime_sec = (days * DAY_SECONDS) + (hours * HOUR_SECONDS) \
             + (minutes * 60) + seconds
@@ -253,10 +253,8 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         facts = {
             "vendor": "Ekinops OneAccess",
-            "uptime": None,  # converted in seconds
+            "uptime": -1.0,  # converted in seconds, float
             "os_version": None,
-            "os_generation": self.oneos_gen,   # addition oneaccess driver
-            "boot_version": None,              # addition oneaccess driver
             "serial_number": None,
             "model": None,
             "hostname": None,
@@ -278,12 +276,10 @@ class OneaccessOneosDriver(NetworkDriver):
             if "Software version" in line_status:
                 facts["os_version"] = line_status.split()[-1]
                 continue
-            if "Boot version" in line_status:
-                facts["boot_version"] = line_status.split()[-1]
-                continue
             if "Sys Up time" in line_status:
                 uptime_str = line_status.split(":")[-1]
                 facts["uptime"] = self.parse_uptime(uptime_str)
+                print(facts["uptime"])
                 continue
 
         for line_hw in show_system_hardware.splitlines():
