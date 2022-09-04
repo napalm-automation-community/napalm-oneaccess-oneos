@@ -11,7 +11,7 @@ with open("requirements.txt", "r") as fs:
 
 setup(
     name="napalm-oneaccess-oneos",
-    version="0.1.1",
+    version="0.1.3",
     packages=find_packages(),
     author="Robin Guillat",
     author_email="robin@guillat.com",
