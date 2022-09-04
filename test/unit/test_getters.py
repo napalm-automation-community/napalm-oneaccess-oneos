@@ -9,30 +9,6 @@ from napalm.base.test.getters import wrap_test_cases
 
 import pytest
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
-
-
-# we use a cusom Facts dict for OneOs to support custom values additions
-oneos_facts_model = TypedDict(
-    "facts",
-    {
-        "os_version": str,
-        "os_generation": str,    # custom oneos
-        "boot_version": str,     # custom oneos
-        "uptime": int,
-        "interface_list": list,
-        "vendor": str,
-        "serial_number": str,
-        "model": str,
-        "hostname": str,
-        "fqdn": str,
-    },
-)
-
-
 
 @pytest.mark.usefixtures("set_device_parameters")
 class TestGetter(BaseTestGetters):
@@ -116,9 +92,7 @@ class TestGetter(BaseTestGetters):
         # ---------
 
         facts = self.device.get_facts()
-
-        # we compare to our custom OneOs Fact model
-        assert helpers.test_model(oneos_facts_model, facts)
+        assert helpers.test_model(models.FactsDict, facts)
         return facts
 
 

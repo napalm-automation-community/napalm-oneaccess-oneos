@@ -1,0 +1,5 @@
+username admin password pwd_admin 15
+username alice password pwd_alice 2
+username bob password pwd_bob user
+username patrick password af259d6964faf6b1b6b9e861f720d5e2 8 encrypted 1 type 2 b0eaf35b311a4f83880fa0c461bf176c
+username robin password pwd_robin manager

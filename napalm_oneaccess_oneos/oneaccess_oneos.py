@@ -20,9 +20,13 @@ Read https://napalm.readthedocs.io for more information.
 """
 
 import re
+from typing import Dict
 
 from napalm.base import NetworkDriver
+from napalm.base import models
 from napalm.base.netmiko_helpers import netmiko_args
+
+
 
 
 # Easier to store these as constants
@@ -229,7 +233,7 @@ class OneaccessOneosDriver(NetworkDriver):
     def parse_uptime(uptime_str):
         """
         Extract the uptime string from the given OneAccess.
-        Return the uptime in seconds as an integer
+        Return the uptime in seconds as a float
 
         credit @mwallraf
         """
@@ -238,10 +242,10 @@ class OneaccessOneosDriver(NetworkDriver):
 
         m = re.match(r"\s*(?P<days>[0-9]+)d (?P<hours>[0-9]+)h (?P<minutes>[0-9]+)m (?P<seconds>[0-9]+)s.*", uptime_str)
         if m:
-            days = int(m.groupdict()["days"])
-            hours = int(m.groupdict()["hours"])
-            minutes = int(m.groupdict()["minutes"])
-            seconds = int(m.groupdict()["seconds"])
+            days = float(m.groupdict()["days"])
+            hours = float(m.groupdict()["hours"])
+            minutes = float(m.groupdict()["minutes"])
+            seconds = float(m.groupdict()["seconds"])
 
         uptime_sec = (days * DAY_SECONDS) + (hours * HOUR_SECONDS) \
             + (minutes * 60) + seconds
@@ -253,10 +257,8 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         facts = {
             "vendor": "Ekinops OneAccess",
-            "uptime": None,  # converted in seconds
+            "uptime": -1.0,  # converted in seconds, float
             "os_version": None,
-            "os_generation": self.oneos_gen,   # addition oneaccess driver
-            "boot_version": None,              # addition oneaccess driver
             "serial_number": None,
             "model": None,
             "hostname": None,
@@ -277,9 +279,6 @@ class OneaccessOneosDriver(NetworkDriver):
                 continue
             if "Software version" in line_status:
                 facts["os_version"] = line_status.split()[-1]
-                continue
-            if "Boot version" in line_status:
-                facts["boot_version"] = line_status.split()[-1]
                 continue
             if "Sys Up time" in line_status:
                 uptime_str = line_status.split(":")[-1]
@@ -685,3 +684,87 @@ class OneaccessOneosDriver(NetworkDriver):
             # ###### no temperature data implemented for OS5 ########
 
         return environment
+
+
+    def get_users(self) -> Dict[str, models.UsersDict]:
+        """
+        Returns a dictionary with the configured users.
+        The keys of the main dictionary represents the username. The values represent the details
+        of the user, represented by the following keys:
+
+            * level (int)
+            * password (str)
+            * sshkeys (list)   ### NOT SUPPORTED
+
+        The level is an integer between 0 and 15, where 0 is the lowest access and 15 represents
+        full access to the device.
+
+        In OneAccess the password hashs are generated with a random SALT value.
+        The passwords are stored in the file /password as per below example:
+        9496e639c29d09b473b601644f94a941$0acd45bc016f1fb4aa12018824ee45cd
+        The part before the $ is the password hash and the part after the $ is the salt
+
+        Example::
+            {
+                'admin': {
+                    'level': 15,
+                    'password': '9496e639c29d09b473b601644f94a941$0acd45bc016f1fb4aa12018824ee45cd',
+                    'sshkeys': []
+                }
+            }
+        """
+        users = {}
+
+        cat_password_file = self._send_command('cat /password')
+
+        """
+        OneOS6 devices will not have a /passsword file for the two following scenarios:
+        1- only the default admin/admin user is present
+        2- The users are saved in the running config instead of in the file
+        """
+        # if no user in /password file then users are in the show run
+        if "No such file or directory" in cat_password_file:
+            show_username = self._send_command('show run username')
+            if "% No entries found." in show_username:  # default admin/admin password
+                users['admin'] = {
+                    'level': 15,
+                    'password': "9496e639c29d09b473b601644f94a941$0acd45bc016f1fb4aa12018824ee45cd",
+                    'sshkeys': []
+                }
+            else:
+                for user_line in show_username.splitlines():
+                    user_info = user_line.split(' ')
+                    if len(user_info) < 5:  # ignore empty lines
+                        continue
+
+                    # priviledge level can be set as its int value or by one of the three priviledge name
+                    if len(user_info[4]) <= 2:
+                        level = int(user_info[4])
+                    elif user_info[4] == "administrator":
+                        level = 15
+                    elif user_info[4] == "manager":
+                        level = 7
+                    elif user_info[4] == "user":
+                        level = 0
+
+                    password = user_info[3]
+                    # If the password is encrypted, we add the SALT hash to our data
+                    if len(user_info) > 5:
+                        password += '$' + user_info[9]
+
+                    users[user_info[1]] = {
+                        'level': level,
+                        'password': password,
+                        'sshkeys': []  # not supported
+                    }
+        else:  # users to be retrieved from /password file
+            for user_line in cat_password_file.splitlines():
+                if len(user_line) < 3:  # pass empty lines
+                    continue
+                user_info = user_line.split(':')
+                users[user_info[0]] = {
+                    'level': int(user_info[2]),
+                    'password': user_info[1],
+                    'sshkeys': []  # no supported
+                }
+        return users

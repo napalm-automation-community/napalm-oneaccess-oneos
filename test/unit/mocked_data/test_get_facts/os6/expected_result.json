@@ -1,9 +1,7 @@
 {
     "vendor": "Ekinops OneAccess",
-    "uptime": 1706509,
+    "uptime": 1706509.0,
     "os_version": "OneOS-pCPE-PPC_pi2-6.7.4",
-    "os_generation": "OneOS6",
-    "boot_version": "BOOT-PPC_hw2-2.1.3",
     "serial_number": "T2117008159002061",
     "model": "ONE2515",
     "hostname": "One2515",
