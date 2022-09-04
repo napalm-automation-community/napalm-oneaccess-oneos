@@ -1,0 +1,27 @@
+{
+    "admin": {
+     "level": 15,
+     "password": "pwd_admin",
+     "sshkeys": []
+    },
+    "alice": {
+     "level": 2,
+     "password": "pwd_alice",
+     "sshkeys": []
+    },
+    "bob": {
+     "level": 0,
+     "password": "pwd_bob",
+     "sshkeys": []
+    },
+    "patrick": {
+     "level": 8,
+     "password": "af259d6964faf6b1b6b9e861f720d5e2$b0eaf35b311a4f83880fa0c461bf176c",
+     "sshkeys": []
+    },
+    "robin": {
+     "level": 7,
+     "password": "pwd_robin",
+     "sshkeys": []
+    }
+   }

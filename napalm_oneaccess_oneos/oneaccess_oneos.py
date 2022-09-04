@@ -694,7 +694,7 @@ class OneaccessOneosDriver(NetworkDriver):
 
             * level (int)
             * password (str)
-            * sshkeys (list)   ### NOT SUPPORTED in OneAccess
+            * sshkeys (list)   ### NOT SUPPORTED
 
         The level is an integer between 0 and 15, where 0 is the lowest access and 15 represents
         full access to the device.
@@ -715,14 +715,15 @@ class OneaccessOneosDriver(NetworkDriver):
         """
         users = {}
 
-        users_list = self._send_command('cat /password')
+        cat_password_file = self._send_command('cat /password')
 
         """
         OneOS6 devices will not have a /passsword file for the two following scenarios:
         1- only the default admin/admin user is present
         2- The users are saved in the running config instead of in the file
         """
-        if "No such file or directory" in users_list:
+        # if no user in /password file then users are in the show run
+        if "No such file or directory" in cat_password_file:
             show_username = self._send_command('show run username')
             if "% No entries found." in show_username:  # default admin/admin password
                 users['admin'] = {
@@ -756,7 +757,14 @@ class OneaccessOneosDriver(NetworkDriver):
                         'password': password,
                         'sshkeys': []  # not supported
                     }
-        else:
-            # TO DO : Read users from password file
-            pass
+        else:  # users to be retrieved from /password file
+            for user_line in cat_password_file.splitlines():
+                if len(user_line) < 3:  # pass empty lines
+                    continue
+                user_info = user_line.split(':')
+                users[user_info[0]] = {
+                    'level': int(user_info[2]),
+                    'password': user_info[1],
+                    'sshkeys': []  # no supported
+                }
         return users
